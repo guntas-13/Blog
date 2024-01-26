@@ -1,0 +1,13 @@
+[
+  {
+    "listing": "/index.html",
+    "items": [
+      "/posts/Pooling/ML_Scratch_Pooling.html",
+      "/posts/Object-Oriented-Programming/ML_Scratch_OOP.html",
+      "/posts/2D-Convolution/ML_Scratch_2D_Convolution.html",
+      "/posts/Convolution/ML_Scratch_Convolution.html",
+      "/posts/Gradient-Descent/Gradient_Descent.html",
+      "/posts/Linear-Regression/Linear_Regression.html"
+    ]
+  }
+]

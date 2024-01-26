@@ -1,0 +1,55 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "Guntas Blog"
+  favicon: tabicon.png
+  page-footer:
+    left: "Website made with [Quarto](https://quarto.org/), by Guntas Singh Saran."
+    right:
+      - icon: github
+        href: https://github.com/guntas-13/
+      - icon: instagram
+        href: https://www.instagram.com/guntas.saran13/
+      - icon: linkedin
+        href: https://www.linkedin.com/in/guntas-singh-saran-2b8811179/
+      - icon: envelope
+        href: mailto:guntassingh.saran@iitgn.ac.in
+  navbar:
+    background: primary
+    type: primary
+    right:
+      - text: Home
+        href: https://guntas-13.github.io
+      - about.qmd
+      - icon: github
+        href: https://github.com/guntas-13
+      - icon: linkedin
+        href: https://www.linkedin.com/in/guntas-singh-saran-2b8811179/
+      - icon: instagram
+        href: https://www.instagram.com/guntas.saran13/
+      - icon: envelope
+        href: mailto:guntassingh.saran@iitgn.ac.in
+format:
+  html:
+    smooth-scroll: true
+    theme: 
+      - pulse
+      - custom.scss
+    mainfont: Poppins
+    # css: styles.css
+
+    code-copy: true
+    code-fold: true
+    code-overflow: wrap
+    citations-hover: true
+    footnotes-hover: true
+    toc: true
+    code-link: true
+
+
+editor: visual
+
+execute:
+  freeze: auto

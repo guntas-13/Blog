@@ -1,0 +1,22 @@
+---
+title: "About"
+image: profile.jpg
+about:
+  template: jolla
+  links:
+    - icon: linkedin
+      text: LinkedIn
+      href: https://www.linkedin.com/in/guntas-singh-saran-2b8811179/
+    - icon: github
+      text: Github
+      href: https://github.com/guntas-13
+    - icon: instagram
+      text: Instagram
+      href: https://www.instagram.com/guntas.saran13/
+    - icon: envelope
+      text: Mail
+      href: mailto:guntassingh.saran@iitgn.ac.in
+
+---
+
+Here's the compilation of the blog posts written by me in the interest of exploring or learning new concepts!
