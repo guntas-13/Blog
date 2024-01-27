@@ -1,4 +1,9 @@
 /*-- scss:defaults --*/
+
+
+@import 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap';
+$font-family: 'Poppins', sans-serif;
+
 $bs-blue: #027373 !default;
 $bs-pagination-active-bg: $bs-blue !default;
 $bs-primary: $bs-blue !default;
