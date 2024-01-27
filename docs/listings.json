@@ -2,6 +2,10 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/Time-Series/DataAnalysis_HrridayWork.html",
+      "/posts/Feature-Extraction/FeaturesExtr.html",
+      "/posts/Model-Deployment/FinalTrainingTry1.html",
+      "/posts/Model-Deployment-Raw/FinalTrainingTry2.html",
       "/posts/Pooling/ML_Scratch_Pooling.html",
       "/posts/Object-Oriented-Programming/ML_Scratch_OOP.html",
       "/posts/2D-Convolution/ML_Scratch_2D_Convolution.html",
