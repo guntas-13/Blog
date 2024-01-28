@@ -1,0 +1,2744 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.549">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Hrriday V. Ruparel">
+<meta name="dcterms.date" content="2024-01-24">
+
+<title>Guntas Blog - Decision Tree Classifier built from scratch</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../tabicon.png" rel="icon" type="image/png">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Guntas Blog</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="https://guntas-13.github.io"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/guntas-13"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/guntas-singh-saran-2b8811179/"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.instagram.com/guntas.saran13/"> <i class="bi bi-instagram" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="mailto:guntassingh.saran@iitgn.ac.in"> <i class="bi bi-envelope" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Decision Tree Classifier built from scratch</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">Classfication</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Hrriday V. Ruparel </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">January 24, 2024</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<section id="decision-tree-implementation" class="level4">
+<h4 class="anchored" data-anchor-id="decision-tree-implementation">Decision Tree Implementation</h4>
+<p>Model Implementation</p>
+<div id="cell-3" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Literal</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> utils <span class="im">import</span> <span class="op">*</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> metrics <span class="im">import</span> <span class="op">*</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Next:</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>,name, ptr <span class="op">=</span> <span class="va">None</span>):</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.ptr <span class="op">=</span> ptr</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.name <span class="op">=</span> name</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Node:</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, to_split<span class="op">=</span><span class="va">None</span>, split_val<span class="op">=</span><span class="fl">0.0</span>, depth<span class="op">=</span><span class="bu">float</span>(<span class="st">'inf'</span>), decision <span class="op">=</span> <span class="va">None</span>):</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.to_split <span class="op">=</span> to_split</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.split_val <span class="op">=</span> split_val</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.depth <span class="op">=</span> depth</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.decision <span class="op">=</span> decision</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.left_ptr <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.right_ptr <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.nexts <span class="op">=</span> []</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add_in_nexts(<span class="va">self</span>,name, ptr<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>        lst <span class="op">=</span> <span class="va">self</span>.nexts</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>        lst.append(Next(name <span class="op">=</span> name,ptr <span class="op">=</span> ptr))</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.nexts <span class="op">=</span> lst</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> DecisionTree:</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    criterion: Literal[<span class="st">"information_gain"</span>, <span class="st">"gini_index"</span>]</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    max_depth: <span class="bu">int</span>  </span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, criterion<span class="op">=</span><span class="st">'information_gain'</span>, max_depth<span class="op">=</span><span class="dv">4</span>):</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.criterion <span class="op">=</span> criterion</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.max_depth <span class="op">=</span> max_depth</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Root <span class="op">=</span> <span class="va">None</span>    </span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, X: pd.DataFrame, y: pd.Series) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""</span></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a><span class="co">        Function to train and construct the decision tree</span></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a><span class="co">        """</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> dfconvertor(a):</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>            x<span class="op">=</span>pd.DataFrame(a[<span class="dv">0</span>])</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>            x[a[<span class="dv">1</span>].name]<span class="op">=</span>a[<span class="dv">1</span>]</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>            x<span class="op">=</span>x.reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> x.iloc[:,:<span class="op">-</span><span class="dv">1</span>], x.iloc[:,<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> make_tree(X: pd.DataFrame, y:pd.Series, features:<span class="bu">list</span>, criterion:<span class="bu">str</span>, max_depth:<span class="bu">int</span>, node_, value):</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>            <span class="co"># same condition for all cases </span></span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span>(y.nunique() <span class="op">==</span> <span class="dv">1</span>):</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>                node_.decision <span class="op">=</span> y.mode()[<span class="dv">0</span>]</span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span></span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>            <span class="co"># for discrete outputs</span></span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span>(<span class="bu">len</span>(features) <span class="op">==</span> <span class="dv">0</span> <span class="kw">and</span> (<span class="kw">not</span> check_ifreal(y))):</span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>                node_.decision <span class="op">=</span> y.mode()[<span class="dv">0</span>]</span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span></span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> (node_.depth <span class="op">&gt;</span> max_depth <span class="kw">and</span> (<span class="kw">not</span> check_ifreal(y))):</span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>                node_.decision <span class="op">=</span> y.mode()[<span class="dv">0</span>] </span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span></span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>            <span class="co"># for real outputs</span></span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span>(<span class="bu">len</span>(features) <span class="op">==</span> <span class="dv">0</span> <span class="kw">and</span> (check_ifreal(y))):</span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a>                node_.decision <span class="op">=</span> y.mean() </span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span>    </span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> (node_.depth <span class="op">&gt;</span> max_depth <span class="kw">and</span> (check_ifreal(y))):</span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a>                node_.decision <span class="op">=</span> y.mean() </span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span>         </span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span>:</span>
+<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a>                <span class="co">#  for discrete inputs</span></span>
+<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> (<span class="kw">not</span> check_ifreal(X.iloc[:,<span class="dv">0</span>])):</span>
+<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a>                    opt_attr_ <span class="op">=</span> opt_split_attribute(X, y, criterion, pd.Series(features))</span>
+<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a>                    node_.to_split <span class="op">=</span> opt_attr_</span>
+<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">for</span> element <span class="kw">in</span> split_data(X, y, opt_attr_, <span class="dv">0</span>):</span>
+<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a>                        Xi, yi <span class="op">=</span> dfconvertor(element) </span>
+<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a>                        node_.add_in_nexts(name <span class="op">=</span> Xi[opt_attr_].unique()[<span class="dv">0</span>])</span>
+<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a>                        new_node <span class="op">=</span> Node(depth <span class="op">=</span> node_.depth <span class="op">+</span> <span class="dv">1</span>, split_val<span class="op">=</span>value)</span>
+<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a>                        node_.nexts[<span class="op">-</span><span class="dv">1</span>].ptr <span class="op">=</span> new_node </span>
+<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a>                        features_ <span class="op">=</span> [feature <span class="cf">for</span> feature <span class="kw">in</span> features <span class="cf">if</span> feature <span class="op">!=</span> opt_attr_]</span>
+<span id="cb1-87"><a href="#cb1-87" aria-hidden="true" tabindex="-1"></a>                        make_tree(Xi, yi, features_, criterion, max_depth, new_node, value)</span>
+<span id="cb1-88"><a href="#cb1-88" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">return</span> </span>
+<span id="cb1-89"><a href="#cb1-89" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb1-90"><a href="#cb1-90" aria-hidden="true" tabindex="-1"></a>                <span class="co"># for real inputs</span></span>
+<span id="cb1-91"><a href="#cb1-91" aria-hidden="true" tabindex="-1"></a>                <span class="cf">else</span>:</span>
+<span id="cb1-92"><a href="#cb1-92" aria-hidden="true" tabindex="-1"></a>                    <span class="co"># for RIRO</span></span>
+<span id="cb1-93"><a href="#cb1-93" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">if</span> check_ifreal(y):</span>
+<span id="cb1-94"><a href="#cb1-94" aria-hidden="true" tabindex="-1"></a>                        opt_attribute, split_val <span class="op">=</span> opt_attr(X, y)</span>
+<span id="cb1-95"><a href="#cb1-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-96"><a href="#cb1-96" aria-hidden="true" tabindex="-1"></a>                    <span class="co">#for RIDO    </span></span>
+<span id="cb1-97"><a href="#cb1-97" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">else</span>:</span>
+<span id="cb1-98"><a href="#cb1-98" aria-hidden="true" tabindex="-1"></a>                        optimal_attribute <span class="op">=</span> find_optimal_attribute(df_to_array(X), np.array(y))</span>
+<span id="cb1-99"><a href="#cb1-99" aria-hidden="true" tabindex="-1"></a>                        opt_attribute <span class="op">=</span> X.columns[optimal_attribute.feature_index]</span>
+<span id="cb1-100"><a href="#cb1-100" aria-hidden="true" tabindex="-1"></a>                        split_val <span class="op">=</span> optimal_attribute.split_value</span>
+<span id="cb1-101"><a href="#cb1-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-102"><a href="#cb1-102" aria-hidden="true" tabindex="-1"></a>                    <span class="co"># for real input</span></span>
+<span id="cb1-103"><a href="#cb1-103" aria-hidden="true" tabindex="-1"></a>                    node_.to_split <span class="op">=</span> opt_attribute</span>
+<span id="cb1-104"><a href="#cb1-104" aria-hidden="true" tabindex="-1"></a>                    node_.split_val <span class="op">=</span> split_val</span>
+<span id="cb1-105"><a href="#cb1-105" aria-hidden="true" tabindex="-1"></a>                    t, r <span class="op">=</span> split_data(X, y, opt_attribute, split_val)</span>
+<span id="cb1-106"><a href="#cb1-106" aria-hidden="true" tabindex="-1"></a>                    left_df_X, left_df_y <span class="op">=</span> dfconvertor(t)</span>
+<span id="cb1-107"><a href="#cb1-107" aria-hidden="true" tabindex="-1"></a>                    right_df_X, right_df_y <span class="op">=</span> dfconvertor(r)</span>
+<span id="cb1-108"><a href="#cb1-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-109"><a href="#cb1-109" aria-hidden="true" tabindex="-1"></a>                    new_node <span class="op">=</span> Node(depth<span class="op">=</span>node_.depth <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb1-110"><a href="#cb1-110" aria-hidden="true" tabindex="-1"></a>                    node_.left_ptr <span class="op">=</span> new_node</span>
+<span id="cb1-111"><a href="#cb1-111" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-112"><a href="#cb1-112" aria-hidden="true" tabindex="-1"></a>                    <span class="co"># features_ = [feature for feature in features if feature != opt_attribute]</span></span>
+<span id="cb1-113"><a href="#cb1-113" aria-hidden="true" tabindex="-1"></a>                    make_tree(left_df_X, left_df_y, features, criterion, max_depth, new_node, value)</span>
+<span id="cb1-114"><a href="#cb1-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-115"><a href="#cb1-115" aria-hidden="true" tabindex="-1"></a>                    new_node_ <span class="op">=</span> Node(depth<span class="op">=</span>node_.depth <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb1-116"><a href="#cb1-116" aria-hidden="true" tabindex="-1"></a>                    node_.right_ptr <span class="op">=</span> new_node_</span>
+<span id="cb1-117"><a href="#cb1-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-118"><a href="#cb1-118" aria-hidden="true" tabindex="-1"></a>                    <span class="co"># _features_ = [feature for feature in features if feature != opt_attribute]</span></span>
+<span id="cb1-119"><a href="#cb1-119" aria-hidden="true" tabindex="-1"></a>                    make_tree(right_df_X, right_df_y, features, criterion, max_depth, new_node_, value)</span>
+<span id="cb1-120"><a href="#cb1-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-121"><a href="#cb1-121" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span>                        </span>
+<span id="cb1-122"><a href="#cb1-122" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-123"><a href="#cb1-123" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb1-124"><a href="#cb1-124" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.Root <span class="op">=</span> Node(depth <span class="op">=</span> <span class="dv">0</span>, split_val <span class="op">=</span> y.mean() <span class="cf">if</span> check_ifreal(y) <span class="cf">else</span> y.mode()[<span class="dv">0</span>])   </span>
+<span id="cb1-125"><a href="#cb1-125" aria-hidden="true" tabindex="-1"></a>        make_tree(X, y, <span class="bu">list</span>(X.columns), <span class="va">self</span>.criterion, <span class="va">self</span>.max_depth, <span class="va">self</span>.Root, <span class="va">self</span>.Root.split_val)</span>
+<span id="cb1-126"><a href="#cb1-126" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">None</span>    </span>
+<span id="cb1-127"><a href="#cb1-127" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-128"><a href="#cb1-128" aria-hidden="true" tabindex="-1"></a>        <span class="cf">pass</span></span>
+<span id="cb1-129"><a href="#cb1-129" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-130"><a href="#cb1-130" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> predict(<span class="va">self</span>, X: pd.DataFrame) <span class="op">-&gt;</span> pd.Series:</span>
+<span id="cb1-131"><a href="#cb1-131" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""</span></span>
+<span id="cb1-132"><a href="#cb1-132" aria-hidden="true" tabindex="-1"></a><span class="co">        Funtion to run the decision tree on test inputs</span></span>
+<span id="cb1-133"><a href="#cb1-133" aria-hidden="true" tabindex="-1"></a><span class="co">        """</span></span>
+<span id="cb1-134"><a href="#cb1-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-135"><a href="#cb1-135" aria-hidden="true" tabindex="-1"></a>        <span class="co"># for discrete inputs</span></span>
+<span id="cb1-136"><a href="#cb1-136" aria-hidden="true" tabindex="-1"></a>        <span class="co"># if (not check_ifreal(X.iloc[:,0])):</span></span>
+<span id="cb1-137"><a href="#cb1-137" aria-hidden="true" tabindex="-1"></a>        <span class="co">#     def predict_from_node(feature_names: list, feature_values: list, node):</span></span>
+<span id="cb1-138"><a href="#cb1-138" aria-hidden="true" tabindex="-1"></a>        <span class="co">#         if (node.decision is not None):</span></span>
+<span id="cb1-139"><a href="#cb1-139" aria-hidden="true" tabindex="-1"></a>        <span class="co">#             return node.decision</span></span>
+<span id="cb1-140"><a href="#cb1-140" aria-hidden="true" tabindex="-1"></a>        <span class="co">#         else:</span></span>
+<span id="cb1-141"><a href="#cb1-141" aria-hidden="true" tabindex="-1"></a>        <span class="co">#             split_attribute = node.to_split</span></span>
+<span id="cb1-142"><a href="#cb1-142" aria-hidden="true" tabindex="-1"></a>        <span class="co">#             val = feature_values[feature_names.index(split_attribute)]</span></span>
+<span id="cb1-143"><a href="#cb1-143" aria-hidden="true" tabindex="-1"></a>        <span class="co">#             unique_list = node.nexts #.copy()</span></span>
+<span id="cb1-144"><a href="#cb1-144" aria-hidden="true" tabindex="-1"></a>        <span class="co">#             for unique in unique_list:</span></span>
+<span id="cb1-145"><a href="#cb1-145" aria-hidden="true" tabindex="-1"></a>        <span class="co">#                 if (unique.name ==  val):</span></span>
+<span id="cb1-146"><a href="#cb1-146" aria-hidden="true" tabindex="-1"></a>        <span class="co">#                     feature_values_ = [element for i, element in enumerate(feature_values) if i != feature_names.index(split_attribute)]</span></span>
+<span id="cb1-147"><a href="#cb1-147" aria-hidden="true" tabindex="-1"></a>        <span class="co">#                     feature_names_ = [element for i, element in enumerate(feature_names) if element != split_attribute]</span></span>
+<span id="cb1-148"><a href="#cb1-148" aria-hidden="true" tabindex="-1"></a>        <span class="co">#                     return predict_from_node(feature_names_, feature_values_, unique.ptr)</span></span>
+<span id="cb1-149"><a href="#cb1-149" aria-hidden="true" tabindex="-1"></a>        <span class="co">#             return None</span></span>
+<span id="cb1-150"><a href="#cb1-150" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-151"><a href="#cb1-151" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="kw">not</span> check_ifreal(X.iloc[:,<span class="dv">0</span>])):</span>
+<span id="cb1-152"><a href="#cb1-152" aria-hidden="true" tabindex="-1"></a>            <span class="kw">def</span> predict_from_node(X: pd.DataFrame, node):</span>
+<span id="cb1-153"><a href="#cb1-153" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> (node.decision <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>):</span>
+<span id="cb1-154"><a href="#cb1-154" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">return</span> node.decision</span>
+<span id="cb1-155"><a href="#cb1-155" aria-hidden="true" tabindex="-1"></a>                <span class="cf">else</span>:</span>
+<span id="cb1-156"><a href="#cb1-156" aria-hidden="true" tabindex="-1"></a>                    split_attribute <span class="op">=</span> node.to_split</span>
+<span id="cb1-157"><a href="#cb1-157" aria-hidden="true" tabindex="-1"></a>                    split_attribute_val <span class="op">=</span> X[split_attribute]</span>
+<span id="cb1-158"><a href="#cb1-158" aria-hidden="true" tabindex="-1"></a>                    flag <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb1-159"><a href="#cb1-159" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">for</span> i <span class="kw">in</span> node.nexts:</span>
+<span id="cb1-160"><a href="#cb1-160" aria-hidden="true" tabindex="-1"></a>                        <span class="cf">if</span> i.name <span class="op">==</span> split_attribute_val:</span>
+<span id="cb1-161"><a href="#cb1-161" aria-hidden="true" tabindex="-1"></a>                            flag <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb1-162"><a href="#cb1-162" aria-hidden="true" tabindex="-1"></a>                            <span class="cf">return</span> predict_from_node(X,i.ptr)</span>
+<span id="cb1-163"><a href="#cb1-163" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">if</span> <span class="kw">not</span> flag:</span>
+<span id="cb1-164"><a href="#cb1-164" aria-hidden="true" tabindex="-1"></a>                        <span class="cf">return</span> node.split_val</span>
+<span id="cb1-165"><a href="#cb1-165" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-166"><a href="#cb1-166" aria-hidden="true" tabindex="-1"></a>            <span class="kw">def</span> predict_(X: pd.DataFrame, Tree_Root):</span>
+<span id="cb1-167"><a href="#cb1-167" aria-hidden="true" tabindex="-1"></a>                y <span class="op">=</span> []</span>
+<span id="cb1-168"><a href="#cb1-168" aria-hidden="true" tabindex="-1"></a>                <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X.shape[<span class="dv">0</span>]):</span>
+<span id="cb1-169"><a href="#cb1-169" aria-hidden="true" tabindex="-1"></a>                    y.append(predict_from_node(X.iloc[i,:], Tree_Root))</span>
+<span id="cb1-170"><a href="#cb1-170" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span> pd.Series(y)</span>
+<span id="cb1-171"><a href="#cb1-171" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Traverse the tree you constructed to return the predicted values for the given test inputs.</span></span>
+<span id="cb1-172"><a href="#cb1-172" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-173"><a href="#cb1-173" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb1-174"><a href="#cb1-174" aria-hidden="true" tabindex="-1"></a>            <span class="co"># for real inputs</span></span>
+<span id="cb1-175"><a href="#cb1-175" aria-hidden="true" tabindex="-1"></a>            <span class="kw">def</span> predict_from_node(dataFrame, root):</span>
+<span id="cb1-176"><a href="#cb1-176" aria-hidden="true" tabindex="-1"></a>                <span class="co">## Do check out for len(dataFrame.columns) == 0 condition</span></span>
+<span id="cb1-177"><a href="#cb1-177" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> (root.decision <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>):</span>
+<span id="cb1-178"><a href="#cb1-178" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">return</span> root.decision</span>
+<span id="cb1-179"><a href="#cb1-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-180"><a href="#cb1-180" aria-hidden="true" tabindex="-1"></a>                split_attribute <span class="op">=</span> root.to_split</span>
+<span id="cb1-181"><a href="#cb1-181" aria-hidden="true" tabindex="-1"></a>                split_value <span class="op">=</span> root.split_val</span>
+<span id="cb1-182"><a href="#cb1-182" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-183"><a href="#cb1-183" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> dataFrame[split_attribute][<span class="dv">0</span>] <span class="op">&lt;=</span> split_value:</span>
+<span id="cb1-184"><a href="#cb1-184" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">return</span> predict_from_node(dataFrame, root.left_ptr)</span>
+<span id="cb1-185"><a href="#cb1-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-186"><a href="#cb1-186" aria-hidden="true" tabindex="-1"></a>                <span class="cf">else</span>:</span>
+<span id="cb1-187"><a href="#cb1-187" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">return</span> predict_from_node(dataFrame, root.right_ptr)</span>
+<span id="cb1-188"><a href="#cb1-188" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-189"><a href="#cb1-189" aria-hidden="true" tabindex="-1"></a>            <span class="kw">def</span> predict_(X: pd.DataFrame, tree_root):</span>
+<span id="cb1-190"><a href="#cb1-190" aria-hidden="true" tabindex="-1"></a>                y <span class="op">=</span> []</span>
+<span id="cb1-191"><a href="#cb1-191" aria-hidden="true" tabindex="-1"></a>                <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X.shape[<span class="dv">0</span>]):</span>
+<span id="cb1-192"><a href="#cb1-192" aria-hidden="true" tabindex="-1"></a>                    df <span class="op">=</span> pd.DataFrame(X.iloc[i, :]).T</span>
+<span id="cb1-193"><a href="#cb1-193" aria-hidden="true" tabindex="-1"></a>                    df.reset_index(inplace<span class="op">=</span><span class="va">True</span>, drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-194"><a href="#cb1-194" aria-hidden="true" tabindex="-1"></a>                    y.append(predict_from_node(df, tree_root))</span>
+<span id="cb1-195"><a href="#cb1-195" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span> pd.Series(y)            </span>
+<span id="cb1-196"><a href="#cb1-196" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-197"><a href="#cb1-197" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> predict_(X, <span class="va">self</span>.Root)</span>
+<span id="cb1-198"><a href="#cb1-198" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-199"><a href="#cb1-199" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> plot(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb1-200"><a href="#cb1-200" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""</span></span>
+<span id="cb1-201"><a href="#cb1-201" aria-hidden="true" tabindex="-1"></a><span class="co">        Function to plot the tree</span></span>
+<span id="cb1-202"><a href="#cb1-202" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-203"><a href="#cb1-203" aria-hidden="true" tabindex="-1"></a><span class="co">        Output Example:</span></span>
+<span id="cb1-204"><a href="#cb1-204" aria-hidden="true" tabindex="-1"></a><span class="co">        ?(X1 &gt; 4)</span></span>
+<span id="cb1-205"><a href="#cb1-205" aria-hidden="true" tabindex="-1"></a><span class="co">            Y: ?(X2 &gt; 7)</span></span>
+<span id="cb1-206"><a href="#cb1-206" aria-hidden="true" tabindex="-1"></a><span class="co">                Y: Class A</span></span>
+<span id="cb1-207"><a href="#cb1-207" aria-hidden="true" tabindex="-1"></a><span class="co">                N: Class B</span></span>
+<span id="cb1-208"><a href="#cb1-208" aria-hidden="true" tabindex="-1"></a><span class="co">            N: Class C</span></span>
+<span id="cb1-209"><a href="#cb1-209" aria-hidden="true" tabindex="-1"></a><span class="co">        Where Y =&gt; Yes and N =&gt; No</span></span>
+<span id="cb1-210"><a href="#cb1-210" aria-hidden="true" tabindex="-1"></a><span class="co">        """</span></span>
+<span id="cb1-211"><a href="#cb1-211" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-212"><a href="#cb1-212" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> plot_(node_, depth):</span>
+<span id="cb1-213"><a href="#cb1-213" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> (node_.left_ptr <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">or</span> node_.right_ptr <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> node_.nexts <span class="op">==</span> []):</span>
+<span id="cb1-214"><a href="#cb1-214" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span></span>
+<span id="cb1-215"><a href="#cb1-215" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span>:</span>
+<span id="cb1-216"><a href="#cb1-216" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> (node_.to_split <span class="kw">is</span> <span class="va">None</span>):</span>
+<span id="cb1-217"><a href="#cb1-217" aria-hidden="true" tabindex="-1"></a>                    <span class="bu">print</span>(node_.decision)</span>
+<span id="cb1-218"><a href="#cb1-218" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb1-219"><a href="#cb1-219" aria-hidden="true" tabindex="-1"></a>                <span class="cf">else</span>: <span class="co"># node_decision is None</span></span>
+<span id="cb1-220"><a href="#cb1-220" aria-hidden="true" tabindex="-1"></a>                    <span class="bu">print</span>(<span class="st">'?('</span>,node_.to_split,<span class="st">')'</span>, sep<span class="op">=</span><span class="st">''</span>)</span>
+<span id="cb1-221"><a href="#cb1-221" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">for</span> element <span class="kw">in</span> node_.nexts:</span>
+<span id="cb1-222"><a href="#cb1-222" aria-hidden="true" tabindex="-1"></a>                        <span class="bu">print</span>(<span class="st">"   "</span><span class="op">*</span>depth, element.name, <span class="st">': '</span>,end <span class="op">=</span> <span class="st">''</span>, sep <span class="op">=</span> <span class="st">''</span>)</span>
+<span id="cb1-223"><a href="#cb1-223" aria-hidden="true" tabindex="-1"></a>                        plot_(element.ptr, depth<span class="op">+</span><span class="dv">1</span>)                </span>
+<span id="cb1-224"><a href="#cb1-224" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-225"><a href="#cb1-225" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> _plot_(node_, depth):</span>
+<span id="cb1-226"><a href="#cb1-226" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> (node_.left_ptr <span class="op">==</span> <span class="va">None</span> <span class="kw">and</span> node_.right_ptr <span class="op">==</span> <span class="va">None</span> <span class="kw">and</span> node_.nexts <span class="op">!=</span> [] ):</span>
+<span id="cb1-227"><a href="#cb1-227" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span></span>
+<span id="cb1-228"><a href="#cb1-228" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span>:</span>
+<span id="cb1-229"><a href="#cb1-229" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> (node_.decision <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>):</span>
+<span id="cb1-230"><a href="#cb1-230" aria-hidden="true" tabindex="-1"></a>                    <span class="bu">print</span>(<span class="st">"   "</span><span class="op">*</span>depth,node_.decision)</span>
+<span id="cb1-231"><a href="#cb1-231" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb1-232"><a href="#cb1-232" aria-hidden="true" tabindex="-1"></a>                <span class="cf">else</span>: <span class="co"># node_decision is None</span></span>
+<span id="cb1-233"><a href="#cb1-233" aria-hidden="true" tabindex="-1"></a>                    <span class="bu">print</span>(<span class="st">"   "</span><span class="op">*</span>depth,<span class="st">'?('</span>, node_.to_split, <span class="st">'&lt;='</span>, node_.split_val, <span class="st">')'</span>, sep<span class="op">=</span><span class="st">''</span>)</span>
+<span id="cb1-234"><a href="#cb1-234" aria-hidden="true" tabindex="-1"></a>                    _plot_(node_.left_ptr, depth<span class="op">+</span><span class="dv">1</span>)</span>
+<span id="cb1-235"><a href="#cb1-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-236"><a href="#cb1-236" aria-hidden="true" tabindex="-1"></a>                    <span class="bu">print</span>(<span class="st">"   "</span><span class="op">*</span>depth,<span class="st">'?('</span>, node_.to_split, <span class="st">'&gt;'</span>, node_.split_val, <span class="st">')'</span>, sep<span class="op">=</span><span class="st">''</span>)</span>
+<span id="cb1-237"><a href="#cb1-237" aria-hidden="true" tabindex="-1"></a>                    _plot_(node_.right_ptr, depth<span class="op">+</span><span class="dv">1</span>)                        </span>
+<span id="cb1-238"><a href="#cb1-238" aria-hidden="true" tabindex="-1"></a>        plot_(<span class="va">self</span>.Root, <span class="dv">0</span>)</span>
+<span id="cb1-239"><a href="#cb1-239" aria-hidden="true" tabindex="-1"></a>        _plot_(<span class="va">self</span>.Root,<span class="dv">0</span>)</span>
+<span id="cb1-240"><a href="#cb1-240" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">None</span> </span>
+<span id="cb1-241"><a href="#cb1-241" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-242"><a href="#cb1-242" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-4" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#test for DIDO</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>N <span class="op">=</span> <span class="dv">30</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>P <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> pd.DataFrame({i: pd.Series(np.random.randint(P, size<span class="op">=</span>N), dtype<span class="op">=</span><span class="st">"category"</span>) <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">5</span>)})</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> pd.Series(np.random.randint(P, size<span class="op">=</span>N), dtype<span class="op">=</span><span class="st">"category"</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>num <span class="op">=</span> <span class="dv">21</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> criteria <span class="kw">in</span> [<span class="st">"information_gain"</span>, <span class="st">"gini_index"</span>]:</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    tree <span class="op">=</span> DecisionTree(criterion<span class="op">=</span>criteria)  <span class="co"># Split based on Inf. Gain</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    tree.fit(X.iloc[:num,:], y[:num])</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    y_hat <span class="op">=</span> tree.predict(X.iloc[num:,:])</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    display(pd.concat((pd.DataFrame({<span class="st">'y_hat'</span>:y_hat}),pd.DataFrame({<span class="st">'y'</span>:<span class="bu">list</span>(y[num:])},index <span class="op">=</span> <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">0</span>,N<span class="op">-</span>num)))),axis<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    tree.plot()</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Criteria :"</span>, criteria)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Accuracy: "</span>, accuracy(y_hat, y[num:]))</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> cls <span class="kw">in</span> y.unique():</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f'Class: </span><span class="sc">{</span>cls<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"Precision: "</span>, precision(y_hat, y[num:], cls))</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"Recall: "</span>, recall(y_hat, y[num:], cls))</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>0</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>2</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">5</td>
+<td>0</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">6</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">7</td>
+<td>0</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">8</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>?(3)
+2: ?(0)
+   3: ?(1)
+      2: 0
+      1: 3
+      3: 3
+   2: 0
+   4: 0
+   1: 0
+   0: 0
+0: ?(1)
+   3: 0
+   2: 2
+   1: 2
+   0: 0
+4: ?(0)
+   2: 3
+   1: 1
+1: ?(1)
+   4: 4
+   0: 0
+   1: 0
+3: ?(2)
+   0: 2
+   4: 4
+   3: 2
+Criteria : information_gain
+Accuracy:  0.3333333333333333
+Class: 0
+Precision:  0.42857142857142855
+Recall:  1.0
+
+Class: 2
+Precision:  0.0
+Recall:  0.0
+
+Class: 3
+Precision:  0.0
+Recall:  0.0
+
+Class: 4
+No predictions were made for class 4. Hence, precision is not defined.
+Precision:  None
+Recall:  0.0
+
+Class: 1
+No predictions were made for class 1. Hence, precision is not defined.
+Precision:  None
+Recall:  0.0
+
+?(3)
+2: ?(0)
+   3: ?(1)
+      2: 0
+      1: 3
+      3: 3
+   2: 0
+   4: 0
+   1: 0
+   0: 0
+0: ?(1)
+   3: 0
+   2: 2
+   1: 2
+   0: 0
+4: ?(0)
+   2: 3
+   1: 1
+1: ?(1)
+   4: 4
+   0: 0
+   1: 0
+3: ?(2)
+   0: 2
+   4: 4
+   3: 2
+Criteria : gini_index
+Accuracy:  0.3333333333333333
+Class: 0
+Precision:  0.42857142857142855
+Recall:  1.0
+
+Class: 2
+Precision:  0.0
+Recall:  0.0
+
+Class: 3
+Precision:  0.0
+Recall:  0.0
+
+Class: 4
+No predictions were made for class 4. Hence, precision is not defined.
+Precision:  None
+Recall:  0.0
+
+Class: 1
+No predictions were made for class 1. Hence, precision is not defined.
+Precision:  None
+Recall:  0.0
+</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>0</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>2</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">5</td>
+<td>0</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">6</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">7</td>
+<td>0</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">8</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<div id="cell-5" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># test for DIRO</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>N <span class="op">=</span> <span class="dv">30</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>P <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> pd.DataFrame({i: pd.Series(np.random.randint(P, size<span class="op">=</span>N), dtype<span class="op">=</span><span class="st">"category"</span>) <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">5</span>)})</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> pd.Series(np.random.randn(N))</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>num <span class="op">=</span> <span class="dv">21</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> criteria <span class="kw">in</span> [<span class="st">"information_gain"</span>, <span class="st">"gini_index"</span>]:</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    tree <span class="op">=</span> DecisionTree(criterion<span class="op">=</span>criteria)  <span class="co"># Split based on Inf. Gain</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    tree.fit(X.iloc[:num,:], y[:num])</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    y_hat <span class="op">=</span> tree.predict(X.iloc[num:,:])</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    display(pd.concat((pd.DataFrame({<span class="st">'y_hat'</span>:y_hat}),pd.DataFrame({<span class="st">'y'</span>:<span class="bu">list</span>(y[num:])},index <span class="op">=</span> <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">0</span>,N<span class="op">-</span>num)))),axis<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    tree.plot()</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Criteria :"</span>, criteria)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"RMSE: "</span>, rmse(y_hat, y[num:]))</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"MAE: "</span>, mae(y_hat, y[num:]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>-0.146786</td>
+<td>-0.084165</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>0.301323</td>
+<td>1.237016</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>-0.146786</td>
+<td>-1.426479</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>-0.146786</td>
+<td>0.338023</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>-0.146473</td>
+<td>1.974571</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">5</td>
+<td>-0.146786</td>
+<td>1.965035</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">6</td>
+<td>-0.846017</td>
+<td>-1.939911</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">7</td>
+<td>-0.146786</td>
+<td>-0.762627</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">8</td>
+<td>-0.146786</td>
+<td>0.168659</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>?(1)
+2: ?(0)
+   3: 0.724083251525877
+   4: -0.8703049545610739
+   2: -1.3099506872124742
+3: ?(4)
+   3: ?(2)
+      3: -0.25576463695894236
+      4: 0.3013228009496343
+   4: ?(0)
+      2: 0.8499212040623495
+      3: 1.004986880702632
+   2: -0.6660606202304288
+   0: -0.4417660232260129
+0: ?(3)
+   2: -1.3113242257511093
+   1: -1.0962657952813555
+   0: -0.5137874915082461
+   4: -0.14647280674161622
+4: ?(0)
+   1: -0.5066432196315238
+   2: 2.943663416481284
+   4: -0.8224893687800624
+1: ?(2)
+   3: ?(0)
+      4: 0.9148843219260121
+      0: 1.0867270230392738
+   1: -1.4585169209867577
+   4: -0.6627383133782134
+   0: -0.8460170164557059
+Criteria : information_gain
+RMSE:  1.2195665143747434
+MAE:  1.0023179706204957
+?(1)
+2: ?(0)
+   3: 0.724083251525877
+   4: -0.8703049545610739
+   2: -1.3099506872124742
+3: ?(0)
+   4: ?(2)
+      3: -0.25576463695894236
+      4: 0.3013228009496343
+   2: 0.8499212040623495
+   3: ?(2)
+      0: -0.6660606202304288
+      3: 1.004986880702632
+   1: -0.4417660232260129
+0: ?(3)
+   2: -1.3113242257511093
+   1: -1.0962657952813555
+   0: -0.5137874915082461
+   4: -0.14647280674161622
+4: ?(0)
+   1: -0.5066432196315238
+   2: 2.943663416481284
+   4: -0.8224893687800624
+1: ?(0)
+   4: 0.9148843219260121
+   1: -1.4585169209867577
+   3: ?(2)
+      4: -0.6627383133782134
+      0: -0.8460170164557059
+   0: 1.0867270230392738
+Criteria : gini_index
+RMSE:  1.2013647062227255
+MAE:  1.001281850071568</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>-0.146786</td>
+<td>-0.084165</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>-0.146786</td>
+<td>1.237016</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>-0.146786</td>
+<td>-1.426479</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>-0.146786</td>
+<td>0.338023</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>-0.146473</td>
+<td>1.974571</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">5</td>
+<td>0.849921</td>
+<td>1.965035</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">6</td>
+<td>-1.458517</td>
+<td>-1.939911</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">7</td>
+<td>1.004987</td>
+<td>-0.762627</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">8</td>
+<td>-0.146786</td>
+<td>0.168659</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<div id="cell-6" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># test for RIRO</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>N <span class="op">=</span> <span class="dv">30</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>P <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> pd.DataFrame(np.random.randn(N, P))</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> pd.Series(np.random.randn(N))</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>num <span class="op">=</span> <span class="dv">21</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> criteria <span class="kw">in</span> [<span class="st">"information_gain"</span>, <span class="st">"gini_index"</span>]:</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    tree <span class="op">=</span> DecisionTree(criterion<span class="op">=</span>criteria)  <span class="co"># Split based on Inf. Gain</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    tree.fit(X.iloc[:num,:], y[:num])</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    y_hat <span class="op">=</span> tree.predict(X.iloc[num:,:])</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    display(pd.concat((pd.DataFrame({<span class="st">'y_hat'</span>:y_hat}),pd.DataFrame({<span class="st">'y'</span>:<span class="bu">list</span>(y[num:])},index <span class="op">=</span> <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">0</span>,N<span class="op">-</span>num)))),axis<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    tree.plot()</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Criteria :"</span>, criteria)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"RMSE: "</span>, rmse(y_hat, y[num:]))</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"MAE: "</span>, mae(y_hat, y[num:]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>-0.245388</td>
+<td>-0.815810</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>0.250493</td>
+<td>-0.077102</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>1.158596</td>
+<td>0.341152</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>0.293072</td>
+<td>0.276691</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>0.721819</td>
+<td>0.827183</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">5</td>
+<td>0.473833</td>
+<td>0.013002</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">6</td>
+<td>-0.897682</td>
+<td>1.453534</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">7</td>
+<td>-0.245388</td>
+<td>-0.264657</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">8</td>
+<td>1.158596</td>
+<td>2.720169</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>?(1&lt;=0.3506423035433175)
+   ?(2.0&lt;=-0.7919860527670518)
+      ?(0.0&lt;=-0.8500089439081561)
+          0.4738329209117875
+      ?(0.0&gt;-0.8500089439081561)
+          1.158595579007404
+   ?(2.0&gt;-0.7919860527670518)
+      ?(3.0&lt;=0.02125729698958631)
+         ?(0.0&lt;=0.78828567931571)
+            ?(1.0&lt;=-0.7392804369523404)
+                -0.24104886043268214
+            ?(1.0&gt;-0.7392804369523404)
+                -0.8786447031910382
+         ?(0.0&gt;0.78828567931571)
+             0.29307247329868125
+      ?(3.0&gt;0.02125729698958631)
+         ?(3.0&lt;=0.34644972822559905)
+            ?(1.0&lt;=-0.37608522749223366)
+                0.7218191061881409
+            ?(1.0&gt;-0.37608522749223366)
+                0.4127809269364983
+         ?(3.0&gt;0.34644972822559905)
+            ?(3.0&lt;=1.0673530726244467)
+                -0.897681994289516
+            ?(3.0&gt;1.0673530726244467)
+                0.25049285034587654
+?(1&gt;0.3506423035433175)
+   ?(0.0&lt;=-0.41792178458928875)
+      ?(0.0&lt;=-0.5517318279069667)
+          1.8657745111447566
+      ?(0.0&gt;-0.5517318279069667)
+          1.8967929826539474
+   ?(0.0&gt;-0.41792178458928875)
+      ?(4.0&lt;=-0.6003008780126726)
+         ?(0.0&lt;=0.070861858835451)
+             0.82206015999449
+         ?(0.0&gt;0.070861858835451)
+             0.9633761292443218
+      ?(4.0&gt;-0.6003008780126726)
+         ?(0.0&lt;=-0.06852970380057008)
+             0.3464482094969757
+         ?(0.0&gt;-0.06852970380057008)
+             -0.2453881160028705
+Criteria : information_gain
+RMSE:  1.0160790246579872
+MAE:  0.6922328394475409
+?(1&lt;=0.3506423035433175)
+   ?(2.0&lt;=-0.7919860527670518)
+      ?(0.0&lt;=-0.8500089439081561)
+          0.4738329209117875
+      ?(0.0&gt;-0.8500089439081561)
+          1.158595579007404
+   ?(2.0&gt;-0.7919860527670518)
+      ?(3.0&lt;=0.02125729698958631)
+         ?(0.0&lt;=0.78828567931571)
+            ?(1.0&lt;=-0.7392804369523404)
+                -0.24104886043268214
+            ?(1.0&gt;-0.7392804369523404)
+                -0.8786447031910382
+         ?(0.0&gt;0.78828567931571)
+             0.29307247329868125
+      ?(3.0&gt;0.02125729698958631)
+         ?(3.0&lt;=0.34644972822559905)
+            ?(1.0&lt;=-0.37608522749223366)
+                0.7218191061881409
+            ?(1.0&gt;-0.37608522749223366)
+                0.4127809269364983
+         ?(3.0&gt;0.34644972822559905)
+            ?(3.0&lt;=1.0673530726244467)
+                -0.897681994289516
+            ?(3.0&gt;1.0673530726244467)
+                0.25049285034587654
+?(1&gt;0.3506423035433175)
+   ?(0.0&lt;=-0.41792178458928875)
+      ?(0.0&lt;=-0.5517318279069667)
+          1.8657745111447566
+      ?(0.0&gt;-0.5517318279069667)
+          1.8967929826539474
+   ?(0.0&gt;-0.41792178458928875)
+      ?(4.0&lt;=-0.6003008780126726)
+         ?(0.0&lt;=0.070861858835451)
+             0.82206015999449
+         ?(0.0&gt;0.070861858835451)
+             0.9633761292443218
+      ?(4.0&gt;-0.6003008780126726)
+         ?(0.0&lt;=-0.06852970380057008)
+             0.3464482094969757
+         ?(0.0&gt;-0.06852970380057008)
+             -0.2453881160028705
+Criteria : gini_index
+RMSE:  1.0160790246579872
+MAE:  0.6922328394475409</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>-0.245388</td>
+<td>-0.815810</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>0.250493</td>
+<td>-0.077102</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>1.158596</td>
+<td>0.341152</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>0.293072</td>
+<td>0.276691</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>0.721819</td>
+<td>0.827183</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">5</td>
+<td>0.473833</td>
+<td>0.013002</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">6</td>
+<td>-0.897682</td>
+<td>1.453534</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">7</td>
+<td>-0.245388</td>
+<td>-0.264657</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">8</td>
+<td>1.158596</td>
+<td>2.720169</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<div id="cell-7" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># test for RIDO </span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)    </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>N <span class="op">=</span> <span class="dv">30</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>P <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> pd.DataFrame(np.random.randn(N, P))</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> pd.Series(np.random.randint(P, size<span class="op">=</span>N), dtype<span class="op">=</span><span class="st">"category"</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>num <span class="op">=</span> <span class="dv">21</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> criteria <span class="kw">in</span> [<span class="st">"information_gain"</span>, <span class="st">"gini_index"</span>]:</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    tree <span class="op">=</span> DecisionTree(criterion<span class="op">=</span>criteria)  <span class="co"># Split based on Inf. Gain</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    tree.fit(X.iloc[:num,:], y[:num])</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    y_hat <span class="op">=</span> tree.predict(X.iloc[num:,:])</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    display(pd.concat((pd.DataFrame({<span class="st">'y_hat'</span>:y_hat}),pd.DataFrame({<span class="st">'y'</span>:<span class="bu">list</span>(y[num:])},index <span class="op">=</span> <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">0</span>,N<span class="op">-</span>num)))),axis<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    tree.plot()</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Criteria :"</span>, criteria)</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Accuracy: "</span>, accuracy(y_hat, y[num:]))</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> cls <span class="kw">in</span> y.unique():</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f'Class: </span><span class="sc">{</span>cls<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"Precision: "</span>, precision(y_hat, y[num:], cls))</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"Recall: "</span>, recall(y_hat, y[num:], cls))</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>2</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>4</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>3</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">5</td>
+<td>0</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">6</td>
+<td>1</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">7</td>
+<td>0</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">8</td>
+<td>0</td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>?(4&lt;=-1.4454128458513593)
+   ?(0.0&lt;=-0.5916309506035855)
+       0
+   ?(0.0&gt;-0.5916309506035855)
+      ?(0.0&lt;=0.7801845421853171)
+          2
+      ?(0.0&gt;0.7801845421853171)
+          4
+?(4&gt;-1.4454128458513593)
+   ?(1.0&lt;=1.7157455000081647)
+      ?(4.0&lt;=0.6775429329900813)
+         ?(4.0&lt;=-0.5947512395651535)
+            ?(0.0&lt;=0.5682840703666555)
+                0
+            ?(0.0&gt;0.5682840703666555)
+                1
+         ?(4.0&gt;-0.5947512395651535)
+            ?(2.0&lt;=-0.13759315591942284)
+                0
+            ?(2.0&gt;-0.13759315591942284)
+                3
+      ?(4.0&gt;0.6775429329900813)
+         ?(3.0&lt;=0.4714698601222159)
+             1
+         ?(3.0&gt;0.4714698601222159)
+             4
+   ?(1.0&gt;1.7157455000081647)
+       2
+Criteria : information_gain
+Accuracy:  0.2222222222222222
+Class: 0
+Precision:  0.25
+Recall:  0.5
+
+Class: 3
+Precision:  0.5
+Recall:  0.5
+
+Class: 2
+Precision:  0.0
+Recall:  0.0
+
+Class: 4
+Precision:  0.0
+Recall:  0.0
+
+Class: 1
+Precision:  0.0
+No instance of class 1 was sampled. Hence, recall for class 1 is not defined.
+Recall:  None
+
+?(4&lt;=-1.4454128458513593)
+   ?(0.0&lt;=-0.5916309506035855)
+       0
+   ?(0.0&gt;-0.5916309506035855)
+      ?(0.0&lt;=0.7801845421853171)
+          2
+      ?(0.0&gt;0.7801845421853171)
+          4
+?(4&gt;-1.4454128458513593)
+   ?(1.0&lt;=1.7157455000081647)
+      ?(4.0&lt;=0.6775429329900813)
+         ?(4.0&lt;=-0.5947512395651535)
+            ?(0.0&lt;=0.5682840703666555)
+                0
+            ?(0.0&gt;0.5682840703666555)
+                1
+         ?(4.0&gt;-0.5947512395651535)
+            ?(2.0&lt;=-0.13759315591942284)
+                0
+            ?(2.0&gt;-0.13759315591942284)
+                3
+      ?(4.0&gt;0.6775429329900813)
+         ?(3.0&lt;=0.4714698601222159)
+             1
+         ?(3.0&gt;0.4714698601222159)
+             4
+   ?(1.0&gt;1.7157455000081647)
+       2
+Criteria : gini_index
+Accuracy:  0.2222222222222222
+Class: 0
+Precision:  0.25
+Recall:  0.5
+
+Class: 3
+Precision:  0.5
+Recall:  0.5
+
+Class: 2
+Precision:  0.0
+Recall:  0.0
+
+Class: 4
+Precision:  0.0
+Recall:  0.0
+
+Class: 1
+Precision:  0.0
+No instance of class 1 was sampled. Hence, recall for class 1 is not defined.
+Recall:  None
+</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>2</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>4</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>3</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">5</td>
+<td>0</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">6</td>
+<td>1</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">7</td>
+<td>0</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">8</td>
+<td>0</td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<div id="cell-8" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_blobs</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>X, y <span class="op">=</span> make_blobs(n_samples<span class="op">=</span><span class="dv">300</span>, centers<span class="op">=</span><span class="dv">4</span>,</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                  random_state<span class="op">=</span><span class="dv">0</span>, cluster_std<span class="op">=</span><span class="fl">1.2</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>plt.scatter(X[:, <span class="dv">0</span>], X[:, <span class="dv">1</span>], c<span class="op">=</span>y, s<span class="op">=</span><span class="dv">10</span>, cmap<span class="op">=</span><span class="st">'rainbow'</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="vs">r"$x_1$"</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="vs">r"$x_2$"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="6">
+<pre><code>Text(0, 0.5, '$x_2$')</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="model_test_files/figure-html/cell-7-output-2.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="cell-9" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># test for RIDO </span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)    </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>N <span class="op">=</span> <span class="dv">300</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>P <span class="op">=</span> <span class="dv">4</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> pd.DataFrame(X)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> pd.Series(y, dtype<span class="op">=</span><span class="st">"category"</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>num <span class="op">=</span> <span class="bu">int</span>(N<span class="op">*</span><span class="fl">0.7</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> criteria <span class="kw">in</span> [<span class="st">"information_gain"</span>, <span class="st">"gini_index"</span>]:</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    tree <span class="op">=</span> DecisionTree(criterion<span class="op">=</span>criteria)  <span class="co"># Split based on Inf. Gain</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    tree.fit(X.iloc[:num,:], y[:num])</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    y_hat <span class="op">=</span> tree.predict(X.iloc[num:,:])</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    display(pd.concat((pd.DataFrame({<span class="st">'y_hat'</span>:y_hat}),pd.DataFrame({<span class="st">'y'</span>:<span class="bu">list</span>(y[num:])},index <span class="op">=</span> <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">0</span>,N<span class="op">-</span>num)))),axis<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    tree.plot()</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Criteria :"</span>, criteria)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Accuracy: "</span>, accuracy(y_hat, y[num:]))</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> cls <span class="kw">in</span> y.unique():</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f'Class: </span><span class="sc">{</span>cls<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"Precision: "</span>, precision(y_hat, y[num:], cls))</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"Recall: "</span>, recall(y_hat, y[num:], cls))</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">85</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">86</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">87</td>
+<td>3</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">88</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">89</td>
+<td>2</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+
+<p>90 rows × 2 columns</p>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>?(1&lt;=3.744584695617445)
+   ?(0.0&lt;=-0.38840127416989967)
+       2
+   ?(0.0&gt;-0.38840127416989967)
+      ?(1.0&lt;=2.177059559323637)
+          1
+      ?(1.0&gt;2.177059559323637)
+         ?(1.0&lt;=3.6742256596476213)
+            ?(0.0&lt;=0.469146602388832)
+                0
+            ?(0.0&gt;0.469146602388832)
+                0
+         ?(1.0&gt;3.6742256596476213)
+             2
+?(1&gt;3.744584695617445)
+   ?(1.0&lt;=6.692241377858988)
+      ?(0.0&lt;=-0.9872897383437698)
+         ?(1.0&lt;=5.661767523442929)
+            ?(1.0&lt;=4.114941740589099)
+                2
+            ?(1.0&gt;4.114941740589099)
+                2
+         ?(1.0&gt;5.661767523442929)
+            ?(1.0&lt;=6.589666936280905)
+                3
+            ?(1.0&gt;6.589666936280905)
+                0
+      ?(0.0&gt;-0.9872897383437698)
+         ?(1.0&lt;=4.761010383499839)
+            ?(1.0&lt;=4.205715190188698)
+                0
+            ?(1.0&gt;4.205715190188698)
+                0
+         ?(1.0&gt;4.761010383499839)
+            ?(1.0&lt;=4.775306489805355)
+                3
+            ?(1.0&gt;4.775306489805355)
+                0
+   ?(1.0&gt;6.692241377858988)
+       3
+Criteria : information_gain
+Accuracy:  0.8777777777777778
+Class: 1
+Precision:  0.9230769230769231
+Recall:  0.8888888888888888
+
+Class: 3
+Precision:  0.9523809523809523
+Recall:  0.9090909090909091
+
+Class: 0
+Precision:  0.7037037037037037
+Recall:  0.9047619047619048
+
+Class: 2
+Precision:  1.0
+Recall:  0.8
+
+?(1&lt;=3.744584695617445)
+   ?(0.0&lt;=-0.38840127416989967)
+       2
+   ?(0.0&gt;-0.38840127416989967)
+      ?(1.0&lt;=2.177059559323637)
+          1
+      ?(1.0&gt;2.177059559323637)
+         ?(1.0&lt;=3.6742256596476213)
+            ?(0.0&lt;=0.469146602388832)
+                0
+            ?(0.0&gt;0.469146602388832)
+                0
+         ?(1.0&gt;3.6742256596476213)
+             2
+?(1&gt;3.744584695617445)
+   ?(1.0&lt;=6.692241377858988)
+      ?(0.0&lt;=-0.9872897383437698)
+         ?(1.0&lt;=5.661767523442929)
+            ?(1.0&lt;=4.114941740589099)
+                2
+            ?(1.0&gt;4.114941740589099)
+                2
+         ?(1.0&gt;5.661767523442929)
+            ?(1.0&lt;=6.589666936280905)
+                3
+            ?(1.0&gt;6.589666936280905)
+                0
+      ?(0.0&gt;-0.9872897383437698)
+         ?(1.0&lt;=4.761010383499839)
+            ?(1.0&lt;=4.205715190188698)
+                0
+            ?(1.0&gt;4.205715190188698)
+                0
+         ?(1.0&gt;4.761010383499839)
+            ?(1.0&lt;=4.775306489805355)
+                3
+            ?(1.0&gt;4.775306489805355)
+                0
+   ?(1.0&gt;6.692241377858988)
+       3
+Criteria : gini_index
+Accuracy:  0.8777777777777778
+Class: 1
+Precision:  0.9230769230769231
+Recall:  0.8888888888888888
+
+Class: 3
+Precision:  0.9523809523809523
+Recall:  0.9090909090909091
+
+Class: 0
+Precision:  0.7037037037037037
+Recall:  0.9047619047619048
+
+Class: 2
+Precision:  1.0
+Recall:  0.8
+</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">85</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">86</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">87</td>
+<td>3</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">88</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">89</td>
+<td>2</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+
+<p>90 rows × 2 columns</p>
+</div>
+</div>
+</div>
+<div id="cell-10" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> np.array([<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>])</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> np.array([<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>])</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># test for RIRO</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>N <span class="op">=</span> <span class="dv">6</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> pd.DataFrame(x)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> pd.Series(y)</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> criteria <span class="kw">in</span> [<span class="st">"information_gain"</span>, <span class="st">"gini_index"</span>]:</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    tree <span class="op">=</span> DecisionTree(criterion<span class="op">=</span>criteria)  <span class="co"># Split based on Inf. Gain</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    tree.fit(X, y)</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    y_hat <span class="op">=</span> tree.predict(X)</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    display(pd.concat((pd.DataFrame({<span class="st">'y_hat'</span>:y_hat}),pd.DataFrame({<span class="st">'y'</span>:<span class="bu">list</span>(y)},index <span class="op">=</span> <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">0</span>,N)))),axis<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    tree.plot()</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Criteria :"</span>, criteria)</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"RMSE: "</span>, rmse(y_hat, y))</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"MAE: "</span>, mae(y_hat, y))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">5</td>
+<td>2</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>?(0&lt;=2.5)
+    0
+?(0&gt;2.5)
+   ?(0.0&lt;=4.5)
+       1
+   ?(0.0&gt;4.5)
+       2
+Criteria : information_gain
+RMSE:  0.0
+MAE:  0.0
+?(0&lt;=2.5)
+    0
+?(0&gt;2.5)
+   ?(0.0&lt;=4.5)
+       1
+   ?(0.0&gt;4.5)
+       2
+Criteria : gini_index
+RMSE:  0.0
+MAE:  0.0</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">5</td>
+<td>2</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<div id="cell-11" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> pd.DataFrame(np.linspace(<span class="dv">0</span>,<span class="dv">7</span>,<span class="dv">100</span>))</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>t_pred <span class="op">=</span> tree.predict(t)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>plt.plot(t,t_pred)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>plt.scatter(x,y)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="model_test_files/figure-html/cell-10-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="cell-12" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> np.linspace(<span class="dv">0</span>,<span class="dv">7</span>,<span class="dv">100</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> np.sin(x)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co"># test for RIRO</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>N <span class="op">=</span> <span class="dv">100</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> pd.DataFrame(x)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> pd.Series(y)</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> criteria <span class="kw">in</span> [<span class="st">"information_gain"</span>, <span class="st">"gini_index"</span>]:</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    tree <span class="op">=</span> DecisionTree(criterion<span class="op">=</span>criteria)  <span class="co"># Split based on Inf. Gain</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    tree.fit(X, y)</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    y_hat <span class="op">=</span> tree.predict(X)</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    display(pd.concat((pd.DataFrame({<span class="st">'y_hat'</span>:y_hat}),pd.DataFrame({<span class="st">'y'</span>:<span class="bu">list</span>(y)},index <span class="op">=</span> <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">0</span>,N)))),axis<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    tree.plot()</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Criteria :"</span>, criteria)</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"RMSE: "</span>, rmse(y_hat, y))</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"MAE: "</span>, mae(y_hat, y))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>0.000000</td>
+<td>0.000000</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>0.070648</td>
+<td>0.070648</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>0.140943</td>
+<td>0.140943</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>0.210534</td>
+<td>0.210534</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>0.279073</td>
+<td>0.279073</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">95</td>
+<td>0.387916</td>
+<td>0.420491</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">96</td>
+<td>0.513855</td>
+<td>0.483539</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">97</td>
+<td>0.513855</td>
+<td>0.544171</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">98</td>
+<td>0.629535</td>
+<td>0.602083</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">99</td>
+<td>0.629535</td>
+<td>0.656987</td>
+</tr>
+</tbody>
+</table>
+
+<p>100 rows × 2 columns</p>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>?(0&lt;=3.005050505050505)
+   ?(0.0&lt;=0.5303030303030303)
+      ?(0.0&lt;=0.24747474747474746)
+         ?(0.0&lt;=0.10606060606060605)
+            ?(0.0&lt;=0.03535353535353535)
+                0.0
+            ?(0.0&gt;0.03535353535353535)
+                0.07064816888592165
+         ?(0.0&gt;0.10606060606060605)
+            ?(0.0&lt;=0.17676767676767674)
+                0.1409432800978515
+            ?(0.0&gt;0.17676767676767674)
+                0.21053404033479042
+      ?(0.0&gt;0.24747474747474746)
+         ?(0.0&lt;=0.38888888888888884)
+            ?(0.0&lt;=0.3181818181818182)
+                0.27907267622443427
+            ?(0.0&gt;0.3181818181818182)
+                0.34621667228835856
+         ?(0.0&gt;0.38888888888888884)
+            ?(0.0&lt;=0.45959595959595956)
+                0.41163048263136653
+            ?(0.0&gt;0.45959595959595956)
+                0.47498720780099063
+   ?(0.0&gt;0.5303030303030303)
+      ?(0.0&lt;=2.51010101010101)
+         ?(0.0&lt;=0.8838383838383838)
+            ?(0.0&lt;=0.6717171717171717)
+                0.565122507992744
+            ?(0.0&gt;0.6717171717171717)
+                0.7005289861202653
+         ?(0.0&gt;0.8838383838383838)
+            ?(0.0&lt;=2.1565656565656566)
+                0.9328597088095921
+            ?(0.0&gt;2.1565656565656566)
+                0.7194759387647931
+      ?(0.0&gt;2.51010101010101)
+         ?(0.0&lt;=2.792929292929293)
+            ?(0.0&lt;=2.6515151515151514)
+                0.5315184294679454
+            ?(0.0&gt;2.6515151515151514)
+                0.4069310816515149
+         ?(0.0&gt;2.792929292929293)
+            ?(0.0&lt;=2.9343434343434343)
+                0.2742194951535717
+            ?(0.0&gt;2.9343434343434343)
+                0.1710504011273846
+?(0&gt;3.005050505050505)
+   ?(0.0&lt;=6.116161616161616)
+      ?(0.0&lt;=3.641414141414141)
+         ?(0.0&lt;=3.287878787878788)
+            ?(0.0&lt;=3.146464646464646)
+                0.06574642171184002
+            ?(0.0&gt;3.146464646464646)
+                -0.07545994817996028
+         ?(0.0&gt;3.287878787878788)
+            ?(0.0&lt;=3.429292929292929)
+                -0.21515978623491833
+            ?(0.0&gt;3.429292929292929)
+                -0.3830250830635027
+      ?(0.0&gt;3.641414141414141)
+         ?(0.0&lt;=5.621212121212121)
+            ?(0.0&lt;=3.994949494949495)
+                -0.6230112638168462
+            ?(0.0&gt;3.994949494949495)
+                -0.8894871549832581
+         ?(0.0&gt;5.621212121212121)
+            ?(0.0&lt;=5.904040404040404)
+                -0.49581242890022725
+            ?(0.0&gt;5.904040404040404)
+                -0.2692534475993057
+   ?(0.0&gt;6.116161616161616)
+      ?(0.0&lt;=6.54040404040404)
+         ?(0.0&lt;=6.328282828282828)
+            ?(0.0&lt;=6.257575757575758)
+                -0.09610767710360636
+            ?(0.0&gt;6.257575757575758)
+                0.009743831559563916
+         ?(0.0&gt;6.328282828282828)
+            ?(0.0&lt;=6.398989898989899)
+                0.08036429967028173
+            ?(0.0&gt;6.398989898989899)
+                0.18531631945405186
+      ?(0.0&gt;6.54040404040404)
+         ?(0.0&lt;=6.752525252525253)
+            ?(0.0&lt;=6.611111111111111)
+                0.28841613698740426
+            ?(0.0&gt;6.611111111111111)
+                0.3879162237229862
+         ?(0.0&gt;6.752525252525253)
+            ?(0.0&lt;=6.893939393939394)
+                0.5138550232185234
+            ?(0.0&gt;6.893939393939394)
+                0.6295348844206806
+Criteria : information_gain
+RMSE:  0.06541273324008903
+MAE:  0.04922901930948384
+?(0&lt;=3.005050505050505)
+   ?(0.0&lt;=0.5303030303030303)
+      ?(0.0&lt;=0.24747474747474746)
+         ?(0.0&lt;=0.10606060606060605)
+            ?(0.0&lt;=0.03535353535353535)
+                0.0
+            ?(0.0&gt;0.03535353535353535)
+                0.07064816888592165
+         ?(0.0&gt;0.10606060606060605)
+            ?(0.0&lt;=0.17676767676767674)
+                0.1409432800978515
+            ?(0.0&gt;0.17676767676767674)
+                0.21053404033479042
+      ?(0.0&gt;0.24747474747474746)
+         ?(0.0&lt;=0.38888888888888884)
+            ?(0.0&lt;=0.3181818181818182)
+                0.27907267622443427
+            ?(0.0&gt;0.3181818181818182)
+                0.34621667228835856
+         ?(0.0&gt;0.38888888888888884)
+            ?(0.0&lt;=0.45959595959595956)
+                0.41163048263136653
+            ?(0.0&gt;0.45959595959595956)
+                0.47498720780099063
+   ?(0.0&gt;0.5303030303030303)
+      ?(0.0&lt;=2.51010101010101)
+         ?(0.0&lt;=0.8838383838383838)
+            ?(0.0&lt;=0.6717171717171717)
+                0.565122507992744
+            ?(0.0&gt;0.6717171717171717)
+                0.7005289861202653
+         ?(0.0&gt;0.8838383838383838)
+            ?(0.0&lt;=2.1565656565656566)
+                0.9328597088095921
+            ?(0.0&gt;2.1565656565656566)
+                0.7194759387647931
+      ?(0.0&gt;2.51010101010101)
+         ?(0.0&lt;=2.792929292929293)
+            ?(0.0&lt;=2.6515151515151514)
+                0.5315184294679454
+            ?(0.0&gt;2.6515151515151514)
+                0.4069310816515149
+         ?(0.0&gt;2.792929292929293)
+            ?(0.0&lt;=2.9343434343434343)
+                0.2742194951535717
+            ?(0.0&gt;2.9343434343434343)
+                0.1710504011273846
+?(0&gt;3.005050505050505)
+   ?(0.0&lt;=6.116161616161616)
+      ?(0.0&lt;=3.641414141414141)
+         ?(0.0&lt;=3.287878787878788)
+            ?(0.0&lt;=3.146464646464646)
+                0.06574642171184002
+            ?(0.0&gt;3.146464646464646)
+                -0.07545994817996028
+         ?(0.0&gt;3.287878787878788)
+            ?(0.0&lt;=3.429292929292929)
+                -0.21515978623491833
+            ?(0.0&gt;3.429292929292929)
+                -0.3830250830635027
+      ?(0.0&gt;3.641414141414141)
+         ?(0.0&lt;=5.621212121212121)
+            ?(0.0&lt;=3.994949494949495)
+                -0.6230112638168462
+            ?(0.0&gt;3.994949494949495)
+                -0.8894871549832581
+         ?(0.0&gt;5.621212121212121)
+            ?(0.0&lt;=5.904040404040404)
+                -0.49581242890022725
+            ?(0.0&gt;5.904040404040404)
+                -0.2692534475993057
+   ?(0.0&gt;6.116161616161616)
+      ?(0.0&lt;=6.54040404040404)
+         ?(0.0&lt;=6.328282828282828)
+            ?(0.0&lt;=6.257575757575758)
+                -0.09610767710360636
+            ?(0.0&gt;6.257575757575758)
+                0.009743831559563916
+         ?(0.0&gt;6.328282828282828)
+            ?(0.0&lt;=6.398989898989899)
+                0.08036429967028173
+            ?(0.0&gt;6.398989898989899)
+                0.18531631945405186
+      ?(0.0&gt;6.54040404040404)
+         ?(0.0&lt;=6.752525252525253)
+            ?(0.0&lt;=6.611111111111111)
+                0.28841613698740426
+            ?(0.0&gt;6.611111111111111)
+                0.3879162237229862
+         ?(0.0&gt;6.752525252525253)
+            ?(0.0&lt;=6.893939393939394)
+                0.5138550232185234
+            ?(0.0&gt;6.893939393939394)
+                0.6295348844206806
+Criteria : gini_index
+RMSE:  0.06541273324008903
+MAE:  0.04922901930948384</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">y_hat</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>0.000000</td>
+<td>0.000000</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>0.070648</td>
+<td>0.070648</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>0.140943</td>
+<td>0.140943</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>0.210534</td>
+<td>0.210534</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>0.279073</td>
+<td>0.279073</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">95</td>
+<td>0.387916</td>
+<td>0.420491</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">96</td>
+<td>0.513855</td>
+<td>0.483539</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">97</td>
+<td>0.513855</td>
+<td>0.544171</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">98</td>
+<td>0.629535</td>
+<td>0.602083</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">99</td>
+<td>0.629535</td>
+<td>0.656987</td>
+</tr>
+</tbody>
+</table>
+
+<p>100 rows × 2 columns</p>
+</div>
+</div>
+</div>
+<div id="cell-13" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> pd.DataFrame(np.linspace(<span class="dv">0</span>,<span class="dv">7</span>,<span class="dv">100</span>))</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>t_pred <span class="op">=</span> tree.predict(t)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>plt.plot(t,t_pred)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>plt.plot(x,y)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="model_test_files/figure-html/cell-12-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  const viewSource = window.document.getElementById('quarto-view-source') ||
+                     window.document.getElementById('quarto-code-tools-source');
+  if (viewSource) {
+    const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+    viewSource.addEventListener("click", function(e) {
+      if (sourceUrl) {
+        // rstudio viewer pane
+        if (/\bcapabilities=\b/.test(window.location)) {
+          window.open(sourceUrl);
+        } else {
+          window.location.href = sourceUrl;
+        }
+      } else {
+        const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+        modal.show();
+      }
+      return false;
+    });
+  }
+  function toggleCodeHandler(show) {
+    return function(e) {
+      const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+      for (let i=0; i<detailsSrc.length; i++) {
+        const details = detailsSrc[i].parentElement;
+        if (show) {
+          details.open = true;
+        } else {
+          details.removeAttribute("open");
+        }
+      }
+      const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+      const fromCls = show ? "hidden" : "unhidden";
+      const toCls = show ? "unhidden" : "hidden";
+      for (let i=0; i<cellCodeDivs.length; i++) {
+        const codeDiv = cellCodeDivs[i];
+        if (codeDiv.classList.contains(fromCls)) {
+          codeDiv.classList.remove(fromCls);
+          codeDiv.classList.add(toCls);
+        } 
+      }
+      return false;
+    }
+  }
+  const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+  if (hideAllCode) {
+    hideAllCode.addEventListener("click", toggleCodeHandler(false));
+  }
+  const showAllCode = window.document.getElementById("quarto-show-all-code");
+  if (showAllCode) {
+    showAllCode.addEventListener("click", toggleCodeHandler(true));
+  }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Website made with <a href="https://quarto.org/">Quarto</a>, by Guntas Singh Saran.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/guntas-13/">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://www.instagram.com/guntas.saran13/">
+      <i class="bi bi-instagram" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/guntas-singh-saran-2b8811179/">
+      <i class="bi bi-linkedin" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="mailto:guntassingh.saran@iitgn.ac.in">
+      <i class="bi bi-envelope" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+<script src="../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
