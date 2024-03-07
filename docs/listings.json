@@ -2,6 +2,10 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/matrix-factorisation/Question5d.html",
+      "/posts/superresolution/Guntas_Q4b.html",
+      "/posts/factorisation/Question5a.html",
+      "/posts/GD-Momentum/Question1b.html",
       "/posts/Adversarial/adv_examples_tutorial_Arjun_Bhagoji.html",
       "/posts/Densest-subgraph/DensestSubgraph.html",
       "/posts/Clustering/Clustering.html",
