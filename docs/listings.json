@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/VGG/TensorBoardVGG2.html",
       "/posts/Next-Char/Question1Wiki.html",
       "/posts/MNIST-MLP/Question4.html",
       "/posts/XOR/Question2.html",
