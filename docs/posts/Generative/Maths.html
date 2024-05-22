@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Guntas Singh Saran">
-<meta name="dcterms.date" content="2024-05-06">
+<meta name="dcterms.date" content="2024-05-20">
 
 <title>Guntas Blog - Mathematics behind Generative Models</title>
 <style>
@@ -179,7 +179,7 @@ window.Quarto = {
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">May 6, 2024</p>
+        <p class="date">May 20, 2024</p>
       </div>
     </div>
     
@@ -212,7 +212,7 @@ window.Quarto = {
 <p>Then the KL Divergence between these two:</p>
 <p><span class="math display">\[ D_{KL}(p \parallel q) = \mathbb{E}_p[ \log(p) - \log(q)] \]</span></p>
 <p><span class="math display">\[ = \mathbb{E}_p \left[ \frac{1}{2} \log \frac{| \Sigma_q |}{| \Sigma_p |} - \frac{1}{2}(\mathbf{x} - \boldsymbol{\mu_p})^T \Sigma_p^{-1} (\mathbf{x} - \boldsymbol{\mu_p}) + \frac{1}{2}(\mathbf{x} - \boldsymbol{\mu_q})^T \Sigma_q^{-1} (\mathbf{x} - \boldsymbol{\mu_q}) \right] \]</span></p>
-<p><span class="math display">\[ = \frac{1}{2} \log \frac{| \Sigma_q |}{| \Sigma_p |} - \mathbb{E}\_p \left[\frac{1}{2}(\mathbf{x} - \boldsymbol{\mu_p})^T \Sigma_p^{-1} (\mathbf{x} - \boldsymbol{\mu_p}) \right] + \mathbb{E}\_p \left[\frac{1}{2}(\mathbf{x} - \boldsymbol{\mu_q})^T \Sigma_q^{-1} (\mathbf{x} - \boldsymbol{\mu_q}) \right] \]</span></p>
+<p><span class="math display">\[ = \frac{1}{2} \log \frac{| \Sigma_q |}{| \Sigma_p |} - \mathbb{E}_p \left[\frac{1}{2}(\mathbf{x} - \boldsymbol{\mu_p})^T \Sigma_p^{-1} (\mathbf{x} - \boldsymbol{\mu_p}) \right] + \mathbb{E}_p \left[\frac{1}{2}(\mathbf{x} - \boldsymbol{\mu_q})^T \Sigma_q^{-1} (\mathbf{x} - \boldsymbol{\mu_q}) \right] \]</span></p>
 <p>Since <span class="math inline">\((\mathbf{x} - \boldsymbol{\mu_p})^T \Sigma_p^{-1} (\mathbf{x} - \boldsymbol{\mu_p}) \in \mathbb{R}\)</span> so, we write it as <span class="math inline">\(tr \left\{(\mathbf{x} - \boldsymbol{\mu_p})^T \Sigma_p^{-1} (\mathbf{x} - \boldsymbol{\mu_p}) \right\}\)</span> and since <span class="math inline">\(tr(\mathbf{ABC}) = tr(\mathbf{CBA})\)</span> hence we can also write it as <span class="math inline">\(tr \left\{(\mathbf{x} - \boldsymbol{\mu_p}) (\mathbf{x} - \boldsymbol{\mu_p})^T \Sigma_p^{-1} \right\}\)</span>. So the second term now is:</p>
 <p><span class="math display">\[ = \frac{1}{2} tr \left\{ \mathbb{E}_p \left[(\mathbf{x} - \boldsymbol{\mu_p}) (\mathbf{x} - \boldsymbol{\mu_p})^T \Sigma_p^{-1} \right] \right\} \]</span></p>
 <p>And since <span class="math inline">\(\mathbb{E}_p \left[(\mathbf{x} - \boldsymbol{\mu_p}) (\mathbf{x} - \boldsymbol{\mu_p})^T\right] = \Sigma_p\)</span>. Simplifying we get</p>
@@ -238,7 +238,7 @@ window.Quarto = {
 <section id="textvariational-autoencoders" class="level1">
 <h1><span class="math display">\[ \text{Variational AutoEncoders} \]</span></h1>
 <p>We wish to achieve two goals: 1. <strong>Learning Abstraction</strong> <span class="math inline">\(\to\)</span> A hidden representation given the input <span class="math inline">\(P(z | X)\)</span> - this is achived by the <strong>Encoder</strong> <span class="math inline">\(Q_{\theta}(z | X)\)</span>. 2. <strong>Generation</strong> <span class="math inline">\(\to\)</span> given some hidden representation using the <strong>Decoder</strong> <span class="math inline">\(P_{\phi}(X | z)\)</span>.</p>
-<p>For all these our aim to understand the joint distribution <span class="math inline">\(P(X, z) = P(z) \cdot P(X | z)\)</span>. At inference we want given some <span class="math inline">\(X\)</span> (observed variable), finding out the most likely assignments of <strong>latent variables</strong> <span class="math inline">\(z\)</span> which would result in this observation.</p>
+<p>For all these our aim is to understand the joint distribution <span class="math inline">\(P(X, z) = P(z) \cdot P(X | z)\)</span>. At inference we want given some <span class="math inline">\(X\)</span> (observed variable), finding out the most likely assignments of <strong>latent variables</strong> <span class="math inline">\(z\)</span> which would result in this observation.</p>
 <p><span class="math display">\[ P(z | X) = \frac{P(X | z) \cdot P(z)}{P(X)} \]</span> But since <span class="math inline">\(P(X) = \int P(X | z) \cdot P(z) dz = \int \int \dots \int P(X | z_1, z_2, \dots z_n) \cdot P(z_1, z_2, \dots z_n) dz_1 \cdot dz_2 \dots dz_n\)</span> is <strong>intractable</strong>.</p>
 <p align="center">
 <img src="./VAE.png" style="width:40%; border:0;">
