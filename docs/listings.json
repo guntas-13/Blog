@@ -2,8 +2,8 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/DCGAN_MNIST/DCGAN_MNIST.html",
       "/posts/Generative/Maths.html",
-      "/posts/VGG/TensorBoardVGG2.html",
       "/posts/Next-Char/Question1Wiki.html",
       "/posts/MNIST-MLP/Question4.html",
       "/posts/XOR/Question2.html",
