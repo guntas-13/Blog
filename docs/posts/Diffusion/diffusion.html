@@ -7,9 +7,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Guntas Singh Saran">
-<meta name="dcterms.date" content="2024-05-20">
+<meta name="dcterms.date" content="2024-06-07">
+<meta name="description" content="Dive deep into the world of Diffusion Models">
 
-<title>Guntas Blog - Maths behind Variational Autoencoders</title>
+<title>Guntas Blog - Maths behind Diffusion Probabilistic Models</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -22,7 +23,27 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
@@ -159,8 +180,13 @@ window.Quarto = {
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">Maths behind Variational Autoencoders</h1>
-                                <div class="quarto-categories">
+      <h1 class="title">Maths behind Diffusion Probabilistic Models</h1>
+                  <div>
+        <div class="description">
+          Dive deep into the world of Diffusion Models
+        </div>
+      </div>
+                          <div class="quarto-categories">
                 <div class="quarto-category">Generative Models</div>
               </div>
                   </div>
@@ -179,7 +205,7 @@ window.Quarto = {
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">May 20, 2024</p>
+        <p class="date">June 7, 2024</p>
       </div>
     </div>
     
@@ -198,96 +224,136 @@ window.Quarto = {
 
 
 
-<section id="textkullback-leibler-divergence" class="level1">
-<h1><span class="math display">\[ \text{Kullback-Leibler Divergence} \]</span></h1>
-<section id="kl-divergence-of-two-distributions-of-continuous-random-variable" class="level3">
-<h3 class="anchored" data-anchor-id="kl-divergence-of-two-distributions-of-continuous-random-variable">KL Divergence of Two Distributions of Continuous Random Variable</h3>
-<p><span class="math display">\[ D_{KL}(p \parallel q) = \underset{x \sim p(x)}{\int} p(x) \log \frac{p(x)}{q(x)} \]</span></p>
-</section>
-<section id="kl-divergence-of-two-gaussians" class="level3">
-<h3 class="anchored" data-anchor-id="kl-divergence-of-two-gaussians">KL Divergence of Two Gaussians</h3>
-<p>For a <span class="math inline">\(k\)</span>-dimensional Gaussian, the PDF <span class="math inline">\(p(\mathbf{x})\)</span> is given as:</p>
-<p><span class="math display">\[ p(\mathbf{x}) = \frac{1}{(2 \pi)^{k/2} | \Sigma |^{1/2}} \exp \left(-\frac{1}{2} (\mathbf{x} - \boldsymbol{\mu})^T \Sigma^{-1} (\mathbf{x} - \boldsymbol{\mu}) \right) \]</span></p>
-<p>Let <span class="math inline">\(p\)</span> and <span class="math inline">\(q\)</span> be two Normal Distributions denoted as <span class="math inline">\(\mathcal{N}(\boldsymbol{\mu}_p, \Sigma_p)\)</span> and <span class="math inline">\(\mathcal{N}(\boldsymbol{\mu}_q, \Sigma_q)\)</span> respectively.</p>
-<p>Then the KL Divergence between these two:</p>
-<p><span class="math display">\[ D_{KL}(p \parallel q) = \mathbb{E}_p[ \log(p) - \log(q)] \]</span></p>
-<p><span class="math display">\[ = \mathbb{E}_p \left[ \frac{1}{2} \log \frac{| \Sigma_q |}{| \Sigma_p |} - \frac{1}{2}(\mathbf{x} - \boldsymbol{\mu_p})^T \Sigma_p^{-1} (\mathbf{x} - \boldsymbol{\mu_p}) + \frac{1}{2}(\mathbf{x} - \boldsymbol{\mu_q})^T \Sigma_q^{-1} (\mathbf{x} - \boldsymbol{\mu_q}) \right] \]</span></p>
-<p><span class="math display">\[ = \frac{1}{2} \log \frac{| \Sigma_q |}{| \Sigma_p |} - \mathbb{E}_p \left[\frac{1}{2}(\mathbf{x} - \boldsymbol{\mu_p})^T \Sigma_p^{-1} (\mathbf{x} - \boldsymbol{\mu_p}) \right] + \mathbb{E}_p \left[\frac{1}{2}(\mathbf{x} - \boldsymbol{\mu_q})^T \Sigma_q^{-1} (\mathbf{x} - \boldsymbol{\mu_q}) \right] \]</span></p>
-<p>Since <span class="math inline">\((\mathbf{x} - \boldsymbol{\mu_p})^T \Sigma_p^{-1} (\mathbf{x} - \boldsymbol{\mu_p}) \in \mathbb{R}\)</span> so, we write it as <span class="math inline">\(tr \left\{(\mathbf{x} - \boldsymbol{\mu_p})^T \Sigma_p^{-1} (\mathbf{x} - \boldsymbol{\mu_p}) \right\}\)</span> and since <span class="math inline">\(tr(\mathbf{ABC}) = tr(\mathbf{CBA})\)</span> hence we can also write it as <span class="math inline">\(tr \left\{(\mathbf{x} - \boldsymbol{\mu_p}) (\mathbf{x} - \boldsymbol{\mu_p})^T \Sigma_p^{-1} \right\}\)</span>. So the second term now is:</p>
-<p><span class="math display">\[ = \frac{1}{2} tr \left\{ \mathbb{E}_p \left[(\mathbf{x} - \boldsymbol{\mu_p}) (\mathbf{x} - \boldsymbol{\mu_p})^T \Sigma_p^{-1} \right] \right\} \]</span></p>
-<p>And since <span class="math inline">\(\mathbb{E}_p \left[(\mathbf{x} - \boldsymbol{\mu_p}) (\mathbf{x} - \boldsymbol{\mu_p})^T\right] = \Sigma_p\)</span>. Simplifying we get</p>
-<p><span class="math display">\[ = \frac{1}{2} tr \left\{ \Sigma_p \Sigma_p^{-1} \right\} \]</span> <span class="math display">\[ = \frac{1}{2} tr \left\{ I_k \right\} \]</span> <span class="math display">\[ = \frac{k}{2} \]</span></p>
-<p>And simplifying the last term:</p>
-<p><span class="math display">\[ \mathbb{E}_p \left[(\mathbf{x} - \boldsymbol{\mu_q})^T \Sigma_q^{-1} (\mathbf{x} - \boldsymbol{\mu_q}) \right] = (\boldsymbol{\mu_p} - \boldsymbol{\mu_q})^T \Sigma_q^{-1} (\boldsymbol{\mu_p} - \boldsymbol{\mu_q}) + tr \left\{ \Sigma_q^{-1} \Sigma_p \right\} \]</span></p>
-<p>So, finally</p>
-</section>
-<section id="d_klp-parallel-q-frac12-left-log-frac-sigma_q-sigma_p---k-boldsymbolmu_p---boldsymbolmu_qt-sigma_q-1-boldsymbolmu_p---boldsymbolmu_q-tr-left-sigma_q-1-sigma_p-right-right" class="level3">
-<h3 class="anchored" data-anchor-id="d_klp-parallel-q-frac12-left-log-frac-sigma_q-sigma_p---k-boldsymbolmu_p---boldsymbolmu_qt-sigma_q-1-boldsymbolmu_p---boldsymbolmu_q-tr-left-sigma_q-1-sigma_p-right-right"><span class="math display">\[ D_{KL}(p \parallel q) = \frac{1}{2} \left[ \log \frac{| \Sigma_q |}{| \Sigma_p |} - k + (\boldsymbol{\mu_p} - \boldsymbol{\mu_q})^T \Sigma_q^{-1} (\boldsymbol{\mu_p} - \boldsymbol{\mu_q}) + tr \left\{ \Sigma_q^{-1} \Sigma_p \right\} \right] \]</span></h3>
-<p>In the scenario when <span class="math inline">\(q\)</span> is <span class="math inline">\(\mathcal{N}(0, I)\)</span>, we get</p>
-</section>
-<section id="d_klp-parallel-q-frac12-left-boldsymbolmu_pt-boldsymbolmu_p-tr-left-sigma_p-right---k---log-sigma_p-right" class="level3">
-<h3 class="anchored" data-anchor-id="d_klp-parallel-q-frac12-left-boldsymbolmu_pt-boldsymbolmu_p-tr-left-sigma_p-right---k---log-sigma_p-right"><span class="math display">\[ D_{KL}(p \parallel q) = \frac{1}{2} \left[ \boldsymbol{\mu_p}^T \boldsymbol{\mu_p} + tr \left\{ \Sigma_p \right\} - k - \log |\Sigma_p| \right] \]</span></h3>
-</section>
-</section>
-<section id="textgenerative-adversarial-network" class="level1">
-<h1><span class="math display">\[ \text{Generative Adversarial Network} \]</span></h1>
-<section id="min_phi-max_theta-vg-d-undersettextbfx-sim-p_textdatamathbbe-logd_thetatextbfx-undersettextbfz-sim-p_ztextbfzmathbbe-1---logd_thetag_phitextbfz" class="level3">
-<h3 class="anchored" data-anchor-id="min_phi-max_theta-vg-d-undersettextbfx-sim-p_textdatamathbbe-logd_thetatextbfx-undersettextbfz-sim-p_ztextbfzmathbbe-1---logd_thetag_phitextbfz"><span class="math display">\[ \min_{\phi} \max_{\theta} V(G, D) = \underset{\textbf{x} \sim p_{\text{data}}}{\mathbb{E}} [\log(D_{\theta}(\textbf{x}))] + \underset{\textbf{z} \sim p_z(\textbf{z})}{\mathbb{E}} [1 - \log(D_{\theta}(G_{\phi}(\textbf{z})))] \]</span></h3>
-</section>
-</section>
-<section id="textvariational-autoencoders" class="level1">
-<h1><span class="math display">\[ \text{Variational AutoEncoders} \]</span></h1>
-<p>We wish to achieve two goals: 1. <strong>Learning Abstraction</strong> <span class="math inline">\(\to\)</span> A hidden representation given the input <span class="math inline">\(P(z | X)\)</span> - this is achived by the <strong>Encoder</strong> <span class="math inline">\(Q_{\theta}(z | X)\)</span>. 2. <strong>Generation</strong> <span class="math inline">\(\to\)</span> given some hidden representation using the <strong>Decoder</strong> <span class="math inline">\(P_{\phi}(X | z)\)</span>.</p>
-<p>For all these our aim is to understand the joint distribution <span class="math inline">\(P(X, z) = P(z) \cdot P(X | z)\)</span>. At inference we want given some <span class="math inline">\(X\)</span> (observed variable), finding out the most likely assignments of <strong>latent variables</strong> <span class="math inline">\(z\)</span> which would result in this observation.</p>
-<p><span class="math display">\[ P(z | X) = \frac{P(X | z) \cdot P(z)}{P(X)} \]</span> But since <span class="math inline">\(P(X) = \int P(X | z) \cdot P(z) dz = \int \int \dots \int P(X | z_1, z_2, \dots z_n) \cdot P(z_1, z_2, \dots z_n) dz_1 \cdot dz_2 \dots dz_n\)</span> is <strong>intractable</strong>.</p>
-<p align="center">
-<img src="./VAE.png" style="width:40%; border:0;">
-</p>
-<p>Hence instead, we assume the posterior distribution <span class="math inline">\(P(z | X)\)</span> as <span class="math inline">\(Q_{\theta}(z | X)\)</span>. Further assume that <span class="math inline">\(Q_{\theta}(z | X)\)</span> is a <strong>Gaussian</strong> whose parameters are determined by our neural network <span class="math inline">\(\to\)</span> <strong>Encoder</strong>.</p>
-<section id="boldsymbolmu-sigma-g_thetax" class="level3">
-<h3 class="anchored" data-anchor-id="boldsymbolmu-sigma-g_thetax"><span class="math display">\[ \boldsymbol{\mu}, \Sigma = g_{\theta}(X) \]</span></h3>
-<p>And since we want this distribution to be close to <span class="math inline">\(P(z | X)\)</span>, hence we wish to minimise their KL Divergence.</p>
-</section>
-<section id="min_theta-d_kl-leftq_thetaz-x-parallel-pz-x-right" class="level3">
-<h3 class="anchored" data-anchor-id="min_theta-d_kl-leftq_thetaz-x-parallel-pz-x-right"><span class="math display">\[ \min_{\theta} D_{KL} \left(Q_{\theta}(z | X) \parallel P(z | X) \right) \]</span></h3>
-<p>Since <span class="math display">\[ D_{KL} \left(Q_{\theta}(z | X) \parallel P(z | X) \right) = \int Q_{\theta}(z | X) \log \frac{Q_{\theta}(z | X)}{P(z | X)} \cdot dz \]</span> <span class="math display">\[ = \underset{z \sim Q_{\theta}(z | X)}{\mathbb{E}} \left[ \log(Q_{\theta}(z | X)) - \log(P(z | X)) \right] \]</span> <span class="math display">\[ = \mathbb{E}_Q \left[ \log(Q_{\theta}(z | X)) - \log \left( \frac{P(X | z) \cdot P(z)}{P(X)} \right) \right] \]</span> <span class="math display">\[ = \mathbb{E}_Q \left[ \log(Q_{\theta}(z | X)) - \log(P(z)) \right] - \mathbb{E}_Q \left[ \log (P(X | z)) \right] + \log(P(X)) \]</span></p>
-<p>Also since <span class="math inline">\(\mathbb{E}_Q \left[ \log(Q_{\theta}(z | X)) - \log(P(z)) \right] = D_{KL} \left(Q_{\theta}(z | X) \parallel P(z) \right)\)</span> so, the finally rearranging we may write</p>
-<section id="logpx-colorredd_kl-leftq_thetaz-x-parallel-pz-x-right-colorbluemathbbe_q-left-log-px-z-right---d_kl-leftq_thetaz-x-parallel-pz-right" class="level4">
-<h4 class="anchored" data-anchor-id="logpx-colorredd_kl-leftq_thetaz-x-parallel-pz-x-right-colorbluemathbbe_q-left-log-px-z-right---d_kl-leftq_thetaz-x-parallel-pz-right"><span class="math display">\[ \log(P(X)) = \color{red}{D_{KL} \left(Q_{\theta}(z | X) \parallel P(z | X) \right)} + \color{blue}{\mathbb{E}_Q \left[ \log (P(X | z)) \right] - D_{KL} \left(Q_{\theta}(z | X) \parallel P(z) \right)} \]</span></h4>
-<p>since <span class="math inline">\(\color{red}{D_{KL} \left(Q_{\theta}(z | X) \parallel P(z | X) \right) \ge 0}\)</span> and <span class="math inline">\(\color{blue}{\mathbb{E}_Q \left[ \log (P(X | z)) \right] - D_{KL} \left(Q_{\theta}(z | X) \parallel P(z) \right)}\)</span> <span class="math inline">\(\le \log(P(X))\)</span>. And since the final task is maximising the log-likelihood of <span class="math inline">\(P(X)\)</span>, hence it is equivalent to maximizing the <span class="math inline">\(\color{blue}{\text{Blue Term}}\)</span>. So, the final objective is</p>
-</section>
-</section>
-<section id="colorgreenmathcalltheta-phi-max_theta-phi-left-mathbbe_q-left-log-p_phix-z-right---d_kl-leftq_thetaz-x-parallel-pz-right-right" class="level3">
-<h3 class="anchored" data-anchor-id="colorgreenmathcalltheta-phi-max_theta-phi-left-mathbbe_q-left-log-p_phix-z-right---d_kl-leftq_thetaz-x-parallel-pz-right-right"><span class="math display">\[ \color{green}{\mathcal{L}(\theta, \phi) = \max_{\theta, \phi} \left\{ \mathbb{E}_Q \left[ \log (P_{\phi}(X | z)) \right] - D_{KL} \left(Q_{\theta}(z | X) \parallel P(z) \right) \right \}} \]</span></h3>
-<p>Now clearly all the terms are within our reach. To get the KL divergence, we make a forward pass through the <strong>Encoder</strong> to get <span class="math inline">\(Q_{\theta}(z | X)\)</span> and we know <span class="math inline">\(P(z)\)</span> <span class="math display">\[ Q_{\theta}(z | X) \sim \mathcal{N}(\boldsymbol{\mu_z}(X), \Sigma_z(X)) \]</span> <span class="math display">\[ P(z) \sim \mathcal{N}(\mathbf{0}, I) \]</span></p>
-<p>So, one half of the loss function is easily computable as:</p>
-<p><span class="math display">\[ D_{KL} \left(Q_{\theta}(z | X) \parallel P(z) \right) = \frac{1}{2} \left[ \boldsymbol{\mu_z}^T(X) \boldsymbol{\mu_z}(X) + tr \left\{ \Sigma_z (X) \right\} - k - \log |\Sigma_z(X)| \right] \]</span></p>
-<p>Now the second part for the decoder, we’ll approximate the expectation with a single <span class="math inline">\(z\)</span> drawn sampled from <span class="math inline">\(Q_{\theta}(z | X)\)</span>. Assume again that <span class="math inline">\(P(X | z)\)</span> as Gaussian with mean <span class="math inline">\(\mu(z)\)</span> and unit variance.</p>
-</section>
-<section id="boldsymbolmu-f_phiz" class="level3">
-<h3 class="anchored" data-anchor-id="boldsymbolmu-f_phiz"><span class="math display">\[ \boldsymbol{\mu} = f_{\phi}(z) \]</span></h3>
-<p>Hence the log-likelihood of the <span class="math inline">\(P(X = x_i | z)\)</span> can be written as:</p>
-<p><span class="math display">\[ \log(P(X = x_i | z)) = C - \frac{1}{2} || X_i - f_{\phi}(z)||^2 \]</span></p>
-<p>Hence the overall loss function is</p>
-</section>
-<section id="min_theta-phi-left-x_i---f_phiz2-frac12-left-boldsymbolmu_ztx-boldsymbolmu_zx-tr-left-sigma_z-x-right---k---log-sigma_zx-right-right" class="level3">
-<h3 class="anchored" data-anchor-id="min_theta-phi-left-x_i---f_phiz2-frac12-left-boldsymbolmu_ztx-boldsymbolmu_zx-tr-left-sigma_z-x-right---k---log-sigma_zx-right-right"><span class="math display">\[ \min_{\theta, \phi} \left\{ || X_i - f_{\phi}(z)||^2 + \frac{1}{2} \left[ \boldsymbol{\mu_z}^T(X) \boldsymbol{\mu_z}(X) + tr \left\{ \Sigma_z (X) \right\} - k - \log |\Sigma_z(X)| \right] \right\} \]</span></h3>
-<p>Now, in order for back propogation algorithm to work, we introduce the continuity in the sampling of <span class="math inline">\(z\)</span> by moving the sampling process to an input layer this is done first by sampling from a Standard Gaussian <span class="math inline">\(\epsilon \sim \mathcal{N}(0, I)\)</span> and then obtaing <span class="math inline">\(z\)</span> with the required <span class="math inline">\(\boldsymbol{\mu_z}(X), \Sigma_z(X)\)</span></p>
-<p><span class="math display">\[ z = \boldsymbol{\mu_z}(X) + \Sigma_z(X) \times \epsilon \]</span></p>
-<p>Hence, the randomness has been shifted to <span class="math inline">\(\epsilon\)</span> and not the <span class="math inline">\(X\)</span> or the parameters of the model.</p>
-<p align="center">
-<img src="./FinalVAE.png" style="width:40%; border:0;">
+<section id="denoising-diffusion-probabilistic-models" class="level1">
+<h1>Denoising Diffusion Probabilistic Models</h1>
+<p>As seen in the case of <a href="https://guntas-13.github.io/Blog/posts/Generative/Maths.html">Variational Autoencoders</a>, it all boils down to learning the probability distributions - <span class="math inline">\(p(\textbf{z} | \textbf{x})\)</span> the posterior abstraction of obtaining a hidden representation <span class="math inline">\(\textbf{z}\)</span> given some input image <span class="math inline">\(\textbf{x}\)</span> and the likelihood <span class="math inline">\(p(\textbf{x} | \textbf{z})\)</span> of generating the image samples given some hidden representation <span class="math inline">\(\textbf{z}\)</span>.</p>
+<p>Now the most crucial task in all these generative models is trying to understand to relate the objective that we are trying to acheive and what the model actually learns. We’ll see the same confusing conclusion being established by the end of this blog and then we’ll realise how beautifully all the mathematics and the tasks laid out make sense.</p>
+<section id="throwback-to-variational-autoencoders" class="level2">
+<h2 class="anchored" data-anchor-id="throwback-to-variational-autoencoders">Throwback to Variational Autoencoders</h2>
+<p>Like in the case of VAEs<span class="citation" data-cites="weng2018VAE"><a href="#ref-weng2018VAE" role="doc-biblioref">[1]</a></span>, we started off by approximating the actual <span class="math inline">\(P(\textbf{z} | \textbf{x})\)</span> through our probabilistic Encoder <span class="math inline">\(Q_{\phi}(\textbf{z} | \textbf{x})\)</span> and minimising the KL divergence between these two. But in order to establish the knowledge of the actual <span class="math inline">\(P(\textbf{z} | \textbf{x})\)</span>, we went into maximising the log-likelihood of data samples <span class="math inline">\(\textbf{x}\)</span> and eventually made the encoder learn this distribution <span class="math inline">\(Q_{\phi}(\textbf{z} | \textbf{x})\)</span> to be as close to the standard normal <span class="math inline">\(\mathcal{N}(\textbf{0}, \mathbb{I})\)</span> as possible. Hence now drawing any <span class="math inline">\(\textbf{z} \sim \mathcal{N}(\textbf{0}, \mathbb{I})\)</span> we are sure of it being close to the <span class="math inline">\(\textbf{z}\)</span>’s seen during training, allowing us to discard off the encoder entirely at inference. The way we setup the objective of making the actual and approximated distribution close to each other will stay same for Diffusion Models too and this would allow us to uncover more truth about the actual distribution itself.</p>
+<img src="./VAE1.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+Graphical Model of a Variation Autoencoder.<br>Adapted from <span class="citation" data-cites="weng2021diffusion"><a href="#ref-weng2021diffusion" role="doc-biblioref">[2]</a></span>.
 </p>
 </section>
-<section id="generation-part" class="level3">
-<h3 class="anchored" data-anchor-id="generation-part">Generation Part</h3>
-<p>After the model parameters are learned we <strong>remove</strong> the <strong>encoder</strong> and feed a <span class="math inline">\(z \sim \mathcal{N}(0, I)\)</span> to the decoder. The decoder will then predict <span class="math inline">\(f_{\phi}(z)\)</span> and we can draw an <span class="math inline">\(X \sim \mathcal{N}(f_{\phi}(z), I)\)</span>.</p>
+<section id="what-are-diffusion-models" class="level2">
+<h2 class="anchored" data-anchor-id="what-are-diffusion-models">What are Diffusion Models?</h2>
+<p>For Diffusion Models instead of one latent variable <span class="math inline">\(\textbf{z}\)</span>, we have <span class="math inline">\(T\)</span> latent variables of the form <span class="math inline">\(\textbf{x}_1, \textbf{x}_2, \cdots , \textbf{x}_T\)</span> of same dimension as the input image <span class="math inline">\(\textbf{x}_0\)</span>, and the most interesting point is that the forward noising process is a deterministic Markov Chain, wherein Gaussian noise is added in gradual <span class="math inline">\(T\)</span> steps, defined as:</p>
+<p><span class="math display">\[ \boxed{q(\textbf{x}_t | \textbf{x}_{t - 1}) = \mathcal{N}(\textbf{x}_{t}; \sqrt{1 - \beta_{t}} \textbf{x}_{t - 1}, \beta_{t} \mathbb{I})} \]</span></p>
+<p>Here the variances are controlled by a scheduler <span class="math inline">\(\left \{ \beta_t \in (0, 1) \right \}_{t = 1}^T\)</span>, which means for each noisy sample <span class="math inline">\(\textbf{x}_t\)</span> is sampled from a Gaussian with <span class="math inline">\(\mathbf{\mu}_q = \sqrt{1 - \beta_{t}} \textbf{x}_{t - 1}\)</span> and covariance matrix <span class="math inline">\(\mathbf{\Sigma}_q = \beta_{t} \mathbb{I}\)</span>. The idea is then to learn the reverse denoising diffusion distribution <span class="math inline">\(q(\textbf{x}_{t - 1} | \textbf{x}_t)\)</span>, which is also a <strong>Markov Chain with learned Gaussian transitions</strong><span class="citation" data-cites="ho2020denoising"><a href="#ref-ho2020denoising" role="doc-biblioref">[3]</a></span> starting at <span class="math inline">\(p(\textbf{x}_T) \sim \mathcal{N}(\textbf{x}_T; \textbf{0}, \mathbb{I})\)</span>. Therefore it then becomes really important to understand the entire joint distribution <span class="math inline">\(p(\textbf{x}_1, \textbf{x}_2, \cdots, \textbf{x}_T)\)</span> denoted in shorthand as <span class="math inline">\(p(\textbf{x}_{0:T})\)</span></p>
+<img src="./Diff.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+Graphical Model of a Diffusion Process.<br>Adapted from <span class="citation" data-cites="weng2021diffusion"><a href="#ref-weng2021diffusion" role="doc-biblioref">[2]</a></span>.
+</p>
+</section>
+<section id="prerequisites" class="level2">
+<h2 class="anchored" data-anchor-id="prerequisites">Prerequisites</h2>
+<section id="joint-conditional-distribution-of-n-rvs-and-bayes-rule" class="level3">
+<h3 class="anchored" data-anchor-id="joint-conditional-distribution-of-n-rvs-and-bayes-rule">Joint &amp; Conditional Distribution of <span class="math inline">\(N\)</span> RVs and Bayes’ Rule</h3>
+<p>A joint distribution over <span class="math inline">\(N\)</span> random variables assigns probabilities to all the events involving these <span class="math inline">\(N\)</span> random variables<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, denoted as</p>
+<p><span class="math display">\[ P(X_1, X_2, X_3, \cdots, X_N) \]</span></p>
+<p>Now starting off with just two RVs, the conditional probabilities <span class="math inline">\(P(X_1 | X_2)\)</span> and <span class="math inline">\(P(X_2 | X_1)\)</span> can be calculated from the joint distribution as:</p>
+<p><span class="math display">\[
+\begin{align}
+P(X_1 | X_2) = \frac{P(X_1, X_2)}{P(X_2)} &amp;&amp; P(X_2 | X_1) = \frac{P(X_1, X_2)}{P(X_1)}
+\end{align}
+\]</span></p>
+<p>Conveniently this allows us to write <span class="math inline">\(P(X_1, X_2) = P(X_2 | X_1) P(X_1)\)</span>. And similarly for <span class="math inline">\(N\)</span> random variables</p>
+<p><span class="math display">\[
+\begin{align}
+P(X_1, X_2, X_3, \cdots, X_N) &amp;= P(X_2, X_3, \cdots, X_N | X_1) \cdot P(X_1) \\
+&amp;= P(X_3, \cdots, X_N | X_1, X_2) \cdot P(X_2 | X_1) \cdot P(X_1) \\
+&amp;= P(X_4, \cdots, X_N | X_1, X_2, X_3) \cdot P(X_3 | X_2, X_1) \cdot P(X_2 | X_1) \cdot P(X_1)
+\end{align}
+\]</span></p>
+<p>Expanding by chain rule we get <span class="math display">\[ \boxed{P(X_1, X_2, X_3, \cdots, X_N) = P(X_1) \cdot \prod_{i = 2}^{N} P(X_i | X_1^{i - 1})} \]</span></p>
+<p>where <span class="math inline">\(X_1^{i - 1} = X_1, X_2, X_3, \cdots, X_{i - 1}\)</span> and then using the joint-conditional-marginal formula, we get the <strong>Bayes’ Rule</strong> as</p>
+<p><span class="math display">\[ P(X_2 | X_1) = \frac{P(X_1 | X_2) \cdot P(X_2)}{P(X_1)} \]</span></p>
+</section>
+<section id="markov-diffusion-process-and-reparametrization" class="level3">
+<h3 class="anchored" data-anchor-id="markov-diffusion-process-and-reparametrization">Markov-Diffusion Process and Reparametrization</h3>
+<p>The special property of a Markov Process is that the future state is dependent <strong>only on previous state</strong>, which means</p>
+<p><span class="math display">\[ P(\textbf{x}_t | \textbf{x}_{t - 1}, \cdots, \textbf{x}_0) = P(\textbf{x}_t | \textbf{x}_{t - 1}) \]</span></p>
+<p>the utility of this is that using the chain rule of joint probability, we may simply write for all our diffusion process forward steps <span class="math inline">\(q(\textbf{x}_{1 : T} | \textbf{x}_0)\)</span> as</p>
+<p><span class="math display">\[
+\begin{align}
+q(\textbf{x}_{1 : T} | \textbf{x}_0) = \prod_{t = 1}^{T} q(\textbf{x}_t | \textbf{x}_{t - 1}) &amp;&amp; q(\textbf{x}_t | \textbf{x}_{t - 1}) = \mathcal{N}(\textbf{x}_{t}; \sqrt{1 - \beta_{t}} \textbf{x}_{t - 1}, \beta_{t} \mathbb{I})
+\end{align}
+\]</span></p>
+<p><strong>Diffusion</strong> is the process of converting samples from a <strong>complex distribution</strong> (the data here) <span class="math inline">\(\textbf{x}_0 \sim q(\textbf{x}_0)\)</span> to samples of a <strong>simple distribution</strong> (isotropic Gaussian noise) <span class="math inline">\(\textbf{x}_T \sim \mathcal{N}(\textbf{0}, \mathbb{I})\)</span>. One can also observe that there is a <span class="math inline">\(\color{purple}{\text{deterministic}}\)</span> and a <span class="math inline">\(\color{blue}{\text{stochastic}}\)</span> component even in our case. Since any RV can be reparametrized as <span class="math inline">\(Z = \sigma X + \mu\)</span>, hence we denote the <span class="math inline">\(\textbf{x}_t\)</span> being drawn from <span class="math inline">\(q(\textbf{x}_t | \textbf{x}_{t - 1})\)</span> as</p>
+<p><span class="math display">\[ \boxed{\textbf{x}_t = \color{purple}{\sqrt{1 - \beta_t} \textbf{x}_{t - 1}} + \color{blue}{\sqrt{\beta_t} \epsilon_{t - 1}}} \]</span></p>
+<p>where <span class="math inline">\(\epsilon_{t - 1}, \epsilon_{t - 2}, \cdots \sim \mathcal{N}(\textbf{0}, \mathbb{I})\)</span></p>
+<img src="./Diff1.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+Forward and Reverse Diffusion Processes.<br>Adapted from <span class="citation" data-cites="ho2020denoising"><a href="#ref-ho2020denoising" role="doc-biblioref">[3]</a></span>.
+</p>
+</section>
+</section>
+<section id="understanding-the-forward-markov-process" class="level2">
+<h2 class="anchored" data-anchor-id="understanding-the-forward-markov-process">Understanding the Forward Markov Process</h2>
+<p>One might wonder why does following the above said markov chain of gaussians lead to <span class="math inline">\(\textbf{x}_T \sim \mathcal{N}(\textbf{0}, \mathbb{I})\)</span>. To understand this let’s take arbitrary constants for the above</p>
+<p><span class="math display">\[ \textbf{x}_t = \sqrt{\alpha} \textbf{x}_{t - 1} + \sqrt{\beta} \epsilon_{t - 1} \]</span></p>
+<p>Since we know that <span class="math inline">\(\textbf{x}_T \sim \mathcal{N}(\textbf{0}, \mathbb{I})\)</span> so let’s open up the formula from this end</p>
+<p><span class="math display">\[
+\begin{align}
+\textbf{x}_T &amp;= \sqrt{\alpha} \textbf{x}_{T - 1} + \sqrt{\beta} \mathcal{N}(\textbf{0}, \mathbb{I}) \\
+&amp;= \sqrt{\alpha} (\sqrt{\alpha} \textbf{x}_{T - 2} + \sqrt{\beta} \mathcal{N}(\textbf{0}, \mathbb{I})) + \sqrt{\beta} \mathcal{N}(\textbf{0}, \mathbb{I}) \\
+&amp;= (\sqrt{\alpha})^2 \textbf{x}_{T - 2} + \sqrt{\alpha} \sqrt{\beta} \mathcal{N}(\textbf{0}, \mathbb{I}) + \sqrt{\beta} \mathcal{N}(\textbf{0}, \mathbb{I}) \\
+\cdots \\
+&amp;= (\sqrt{\alpha})^T \textbf{x}_0 + \sqrt{\beta} ((\sqrt{\alpha})^{T - 1} \mathcal{N}(\textbf{0}, \mathbb{I}) + (\sqrt{\alpha})^{T - 2} \mathcal{N}(\textbf{0}, \mathbb{I}) + \cdots + \mathcal{N}(\textbf{0}, \mathbb{I}))
+\end{align}
+\]</span></p>
+<p>We can combine the independent Gaussians into one Gaussian<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> as they have <strong>variances</strong> as <span class="math inline">\((\beta \alpha^{T - 1}, \beta \alpha^{T - 2}, \cdots, \beta \alpha, \beta)\)</span> with <span class="math inline">\(\sigma^2 = \beta \frac{1 - \alpha^T}{1 - \alpha}\)</span>. Notice that as <span class="math inline">\(T \to \infty, (\sqrt{\alpha})^T \to 0\)</span> and <span class="math inline">\(\textbf{x}_T \to \mathcal{N}(\textbf{0}, \mathbb{I})\)</span> only when <span class="math inline">\(\alpha = 1 - \beta\)</span>.</p>
+<section id="do-we-traverse-for-all-t-steps" class="level3">
+<h3 class="anchored" data-anchor-id="do-we-traverse-for-all-t-steps">Do we traverse for all <span class="math inline">\(T\)</span> steps?</h3>
+<p>Certainly Not! Here’s how the Markov Process allows us to reach any <span class="math inline">\(\textbf{x}_t\)</span> from the image <span class="math inline">\(\textbf{x}_0\)</span>. Let <span class="math inline">\(\alpha_t = 1 - \beta_t\)</span></p>
+<p><span class="math display">\[
+\begin{align}
+\textbf{x}_t &amp;= \sqrt{\alpha_t} \textbf{x}_{t - 1} + \sqrt{1 - \alpha_t} \mathcal{N}(\textbf{0}, \mathbb{I}) \\
+&amp;= \sqrt{\alpha_t} (\sqrt{\alpha_{t - 1}} \textbf{x}_{t - 2} + \sqrt{1 - \alpha_{t - 1}} \mathcal{N}(\textbf{0}, \mathbb{I})) + \sqrt{1 - \alpha_t} \mathcal{N}(\textbf{0}, \mathbb{I}) \\
+&amp;= (\sqrt{\alpha_t \alpha_{t - 1}}) \textbf{x}_{t - 2} + (\sqrt{\alpha_t} \sqrt{1 - \alpha_{t - 1}}) \mathcal{N}(\textbf{0}, \mathbb{I}) + (\sqrt{1 - \alpha_t}) \mathcal{N}(\textbf{0}, \mathbb{I})
+\end{align}
+\]</span></p>
+<p>Combine the independent Gaussians with <span class="math inline">\(\sigma^2 = \alpha_t (1 - \alpha_{t - 1}) + (1 - \alpha_t) = 1 - \alpha_t \alpha_{t - 1}\)</span>, hence</p>
+<p><span class="math display">\[
+\begin{align}
+\textbf{x}_t &amp;= (\sqrt{\alpha_t \alpha_{t - 1}}) \textbf{x}_{t - 2} + (\sqrt{1 - \alpha_t \alpha_{t - 1}})\mathcal{N}(\textbf{0}, \mathbb{I}) \\
+\cdots \\
+&amp;= (\sqrt{\alpha_t \alpha_{t - 1} \cdots \alpha_2 \alpha_1}) \textbf{x}_0 + (\sqrt{1 - \alpha_t \alpha_{t - 1} \cdots \alpha_2 \alpha_1}) \mathcal{N}(\textbf{0}, \mathbb{I})
+\end{align}
+\]</span></p>
+<p>With <span class="math inline">\(\bar{\alpha_t} = \prod_{i = 1}^{t} \alpha_i\)</span>, we finally get</p>
+<p><span class="math display">\[ \boxed{\textbf{x}_t = (\sqrt{\bar{\alpha_t}}) \textbf{x}_0 + (\sqrt{1 - \bar{\alpha_t}}) \mathcal{N}(\textbf{0}, \mathbb{I})} \]</span></p>
+<p><span class="math display">\[ \boxed{q(\textbf{x}_t | \textbf{x}_0) = \mathcal{N}(\textbf{x}_t; (\sqrt{\bar{\alpha_t}}) \textbf{x}_0, (1 - \bar{\alpha_t}) \mathbb{I})} \]</span></p>
+</section>
+</section>
+<section id="the-crucial-reverse-diffusion-process" class="level2">
+<h2 class="anchored" data-anchor-id="the-crucial-reverse-diffusion-process">The Crucial Reverse Diffusion Process</h2>
+<p>text here</p>
+
 
 
 </section>
 </section>
 
-</main> <!-- /main -->
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body" data-entry-spacing="0" role="list">
+<div id="ref-weng2018VAE" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[1] </div><div class="csl-right-inline">L. Weng, <span>“From autoencoder to beta-VAE,”</span> <em>lilianweng.github.io</em>, 2018, Available: <a href="https://lilianweng.github.io/posts/2018-08-12-vae/">https://lilianweng.github.io/posts/2018-08-12-vae/</a></div>
+</div>
+<div id="ref-weng2021diffusion" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[2] </div><div class="csl-right-inline">L. Weng, <span>“What are diffusion models?”</span> <em>lilianweng.github.io</em>, Jul. 2021, Available: <a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models/">https://lilianweng.github.io/posts/2021-07-11-diffusion-models/</a></div>
+</div>
+<div id="ref-ho2020denoising" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[3] </div><div class="csl-right-inline">J. Ho, A. Jain, and P. Abbeel, <span>“Denoising diffusion probabilistic models.”</span> 2020. Available: <a href="https://arxiv.org/abs/2006.11239">https://arxiv.org/abs/2006.11239</a></div>
+</div>
+</div></section><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p><span class="math inline">\(k^N\)</span> values if each RV can take <span class="math inline">\(k\)</span> values<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>Two Gaussians with different variances, <span class="math inline">\(\mathcal{N}(\textbf{0}, \sigma_1^2\mathbb{I})\)</span> and <span class="math inline">\(\mathcal{N}(\textbf{0}, \sigma_2^2\mathbb{I})\)</span> can be merged to a new Gaussian distribution <span class="math inline">\(\mathcal{N}(\textbf{0}, (\sigma_1^2 + \sigma_2^2)\mathbb{I})\)</span><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const toggleBodyColorMode = (bsSheetEl) => {
@@ -367,57 +433,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     // clear code selection
     e.clearSelection();
   });
-  const viewSource = window.document.getElementById('quarto-view-source') ||
-                     window.document.getElementById('quarto-code-tools-source');
-  if (viewSource) {
-    const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
-    viewSource.addEventListener("click", function(e) {
-      if (sourceUrl) {
-        // rstudio viewer pane
-        if (/\bcapabilities=\b/.test(window.location)) {
-          window.open(sourceUrl);
-        } else {
-          window.location.href = sourceUrl;
-        }
-      } else {
-        const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
-        modal.show();
-      }
-      return false;
-    });
-  }
-  function toggleCodeHandler(show) {
-    return function(e) {
-      const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
-      for (let i=0; i<detailsSrc.length; i++) {
-        const details = detailsSrc[i].parentElement;
-        if (show) {
-          details.open = true;
-        } else {
-          details.removeAttribute("open");
-        }
-      }
-      const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
-      const fromCls = show ? "hidden" : "unhidden";
-      const toCls = show ? "unhidden" : "hidden";
-      for (let i=0; i<cellCodeDivs.length; i++) {
-        const codeDiv = cellCodeDivs[i];
-        if (codeDiv.classList.contains(fromCls)) {
-          codeDiv.classList.remove(fromCls);
-          codeDiv.classList.add(toCls);
-        } 
-      }
-      return false;
-    }
-  }
-  const hideAllCode = window.document.getElementById("quarto-hide-all-code");
-  if (hideAllCode) {
-    hideAllCode.addEventListener("click", toggleCodeHandler(false));
-  }
-  const showAllCode = window.document.getElementById("quarto-show-all-code");
-  if (showAllCode) {
-    showAllCode.addEventListener("click", toggleCodeHandler(true));
-  }
   function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
     const config = {
       allowHTML: true,
