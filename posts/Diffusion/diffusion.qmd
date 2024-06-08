@@ -162,7 +162,7 @@ p_{\theta}(\textbf{x}_{0 : T}) = p(\textbf{x}_T) \prod_{t = 1}^T p_{\theta}(\tex
 \end{align}
 $$
 
-Before moving onto defining the objective to find the approximate $ p_{\theta}(\textbf{x}_{t - 1} | \textbf{x}_t)$, its noteworthy to understand the actual reverse process distribution $q(\textbf{x}_{t - 1} | \textbf{x}_t)$. As stated by [@ho2020denoising], the reverse conditional distribution is tractable when condition on $\textbf{x}_0$ and since this a Markov Process, we can safely introduce this $\textbf{x}_0$ in the joint conditional part and then we may expand it by **Bayes' Rule**
+Before moving onto defining the objective to find the approximate $p_{\theta}(\textbf{x}_{t - 1} | \textbf{x}_t)$, its noteworthy to understand the actual reverse process distribution $q(\textbf{x}_{t - 1} | \textbf{x}_t)$. As stated by [@ho2020denoising], the reverse conditional distribution is tractable when condition on $\textbf{x}_0$ and since this a Markov Process, we can safely introduce this $\textbf{x}_0$ in the joint conditional part and then we may expand it by **Bayes' Rule**
 
 $$ q(\textbf{x}_{t - 1} | \textbf{x}_t, \textbf{x}_0) = \frac{q(\textbf{x}_t | \textbf{x}_{t - 1}, \textbf{x}_0) \cdot q(\textbf{x}_{t - 1} | \textbf{x}_0)}{q(\textbf{x}_t | \textbf{x}_0)} $$
 
