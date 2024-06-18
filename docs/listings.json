@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/DDPM/DDPM.html",
       "/posts/Diffusion/diffusion.html",
       "/posts/DCGAN_MNIST/DCGAN_MNIST.html",
       "/posts/Generative/Maths.html",
