@@ -1,0 +1,2639 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.549">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Guntas Singh Saran">
+<meta name="dcterms.date" content="2024-06-20">
+
+<title>Guntas Blog - DDPM Implementation over Celebrity Faces</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../tabicon.png" rel="icon" type="image/png">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Guntas Blog</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="https://guntas-13.github.io"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/guntas-13"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/guntas-singh-saran-2b8811179/"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.instagram.com/guntas.saran13/"> <i class="bi bi-instagram" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="mailto:guntassingh.saran@iitgn.ac.in"> <i class="bi bi-envelope" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">DDPM Implementation over Celebrity Faces</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">Generative Models</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Guntas Singh Saran </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">June 20, 2024</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#forward-process" id="toc-forward-process" class="nav-link active" data-scroll-target="#forward-process">Forward Process</a></li>
+  <li><a href="#reverse-distribution" id="toc-reverse-distribution" class="nav-link" data-scroll-target="#reverse-distribution">Reverse Distribution</a></li>
+  <li><a href="#loss-function" id="toc-loss-function" class="nav-link" data-scroll-target="#loss-function">Loss Function</a></li>
+  <li><a href="#noise-scheduler" id="toc-noise-scheduler" class="nav-link" data-scroll-target="#noise-scheduler">Noise Scheduler</a>
+  <ul class="collapse">
+  <li><a href="#task1-getting-the-noisy-image-given-textbfx_t-t-epsilon" id="toc-task1-getting-the-noisy-image-given-textbfx_t-t-epsilon" class="nav-link" data-scroll-target="#task1-getting-the-noisy-image-given-textbfx_t-t-epsilon"><strong>Task1:</strong> Getting the noisy image given <span class="math inline">\(\textbf{x}_t, t, \epsilon\)</span></a></li>
+  <li><a href="#task2-given-textbfx_t-get-textbfx_t---1" id="toc-task2-given-textbfx_t-get-textbfx_t---1" class="nav-link" data-scroll-target="#task2-given-textbfx_t-get-textbfx_t---1"><strong>Task2:</strong> Given <span class="math inline">\(\textbf{x}_t\)</span> get <span class="math inline">\(\textbf{x}_{t - 1}\)</span></a></li>
+  </ul></li>
+  <li><a href="#model-architecture---unet-inspired" id="toc-model-architecture---unet-inspired" class="nav-link" data-scroll-target="#model-architecture---unet-inspired">Model Architecture - <strong>UNet</strong> inspired</a>
+  <ul class="collapse">
+  <li><a href="#time-embedding-block" id="toc-time-embedding-block" class="nav-link" data-scroll-target="#time-embedding-block"><strong>Time Embedding Block</strong></a></li>
+  <li><a href="#downblock-of-unet" id="toc-downblock-of-unet" class="nav-link" data-scroll-target="#downblock-of-unet"><strong>DownBlock of UNet</strong></a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<div id="cell-1" class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>pip install einops</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>sudo apt install texlive<span class="op">-</span>fonts<span class="op">-</span>recommended texlive<span class="op">-</span>fonts<span class="op">-</span>extra</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>sudo apt<span class="op">-</span>get install dvipng</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-2" class="cell" data-outputid="31956a36-9674-4684-d499-da4b37f6c872" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="op">!</span>mkdir CelebA <span class="op">&amp;&amp;</span> wget https:<span class="op">//</span>s3<span class="op">-</span>us<span class="op">-</span>west<span class="op">-</span><span class="fl">1.</span><span class="er">amazonaws</span>.com<span class="op">/</span>udacity<span class="op">-</span>dlnfd<span class="op">/</span>datasets<span class="op">/</span>celeba.<span class="bu">zip</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>--2024-06-19 17:56:44--  https://s3-us-west-1.amazonaws.com/udacity-dlnfd/datasets/celeba.zip
+Resolving s3-us-west-1.amazonaws.com (s3-us-west-1.amazonaws.com)... 52.219.194.16, 52.219.193.88, 52.219.193.48, ...
+Connecting to s3-us-west-1.amazonaws.com (s3-us-west-1.amazonaws.com)|52.219.194.16|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 1443490838 (1.3G) [application/zip]
+Saving to: ‘celeba.zip’
+
+celeba.zip          100%[===================&gt;]   1.34G  61.2MB/s    in 22s     
+
+2024-06-19 17:57:07 (61.7 MB/s) - ‘celeba.zip’ saved [1443490838/1443490838]
+</code></pre>
+</div>
+</div>
+<div id="cell-3" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> zipfile</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> zipfile.ZipFile(<span class="st">"celeba.zip"</span>,<span class="st">"r"</span>) <span class="im">as</span> zip_ref:</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  zip_ref.extractall(<span class="st">"CelebA/"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-4" class="cell" data-outputid="d61c8ba9-badc-4a90-b3b5-eeb201fb932f" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> random</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch.nn <span class="im">as</span> nn</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch.nn.parallel</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch.nn.functional <span class="im">as</span> F</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torchvision.utils <span class="im">as</span> vutils</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch.utils.data <span class="im">import</span> DataLoader</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torchvision <span class="im">import</span> datasets, transforms, models</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.animation <span class="im">as</span> animation</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> IPython.display <span class="im">import</span> HTML</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> einops <span class="im">import</span> rearrange</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="co"># from latex import latexify</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="co"># latexify(columns = 2)</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>matplotlib inline</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>config InlineBackend.figure_format <span class="op">=</span> <span class="st">"retina"</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> torch.backends.mps.is_available():</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    device <span class="op">=</span> torch.device(<span class="st">"mps"</span>)</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="cf">elif</span> torch.cuda.is_available():</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    device <span class="op">=</span> torch.device(<span class="st">"cuda"</span>)</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>    device <span class="op">=</span> torch.device(<span class="st">"cpu"</span>)</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(device)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>cuda</code></pre>
+</div>
+</div>
+<section id="forward-process" class="level2">
+<h2 class="anchored" data-anchor-id="forward-process">Forward Process</h2>
+<p><span class="math display">\[ \textbf{x}_t = \sqrt{1 - \beta_t} \textbf{x}_{t - 1} + \sqrt{\beta_t} \epsilon_{t - 1} \]</span></p>
+<p><span class="math display">\[ \boxed{\textbf{x}_t = \sqrt{\bar{\alpha_t}} \textbf{x}_0 + \sqrt{1 - \bar{\alpha_t}} \epsilon} \]</span></p>
+<p><span class="math display">\[ \boxed{q(\textbf{x}_t | \textbf{x}_0) = \mathcal{N}(\textbf{x}_t; \sqrt{\bar{\alpha_t}} \textbf{x}_0, (1 - \bar{\alpha_t}) \mathbb{I})} \]</span></p>
+</section>
+<section id="reverse-distribution" class="level2">
+<h2 class="anchored" data-anchor-id="reverse-distribution">Reverse Distribution</h2>
+<p><span class="math display">\[ \boxed{q(\textbf{x}_{t - 1} | \textbf{x}_t, \textbf{x}_0) = \mathcal{N}(\textbf{x}_{t - 1}; \boldsymbol{\mu}_q(\textbf{x}_0, \textbf{x}_t), \mathbf{\Sigma}_q(t))} \]</span></p>
+<p><span class="math display">\[ \boxed{\boldsymbol{\mu}_q(\textbf{x}_t, \textbf{x}_0) = \frac{(1 - \bar{\alpha}_{t - 1}) \sqrt{\alpha_t}}{1 - \bar{\alpha}_t} \textbf{x}_t + \frac{(1 - \alpha_t)\sqrt{\bar{\alpha}_{t - 1}}}{1 - \bar{\alpha}_t}\textbf{x}_0} \]</span></p>
+<p><span class="math display">\[ \boxed{\boldsymbol{\mu}_q(t) = \frac{1}{\sqrt{\alpha_t}} \left(\textbf{x}_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar{\alpha}_t}} \boldsymbol{\epsilon}_t \right)} \]</span></p>
+</section>
+<section id="loss-function" class="level2">
+<h2 class="anchored" data-anchor-id="loss-function">Loss Function</h2>
+<p><span class="math display">\[ L_{VN} = \sum_{t = 2}^T D_{KL} \left(p_{\theta}(\textbf{x}_{t - 1} | \textbf{x}_t) \parallel q(\textbf{x}_{t - 1} | \textbf{x}_t, \textbf{x}_0) \right) + \log p_{\theta}(\textbf{x}_0 | \textbf{x}_1) \]</span></p>
+<p><span class="math display">\[ p_{\theta}(\textbf{x}_{t - 1} | \textbf{x}_t) = \mathcal{N}(\textbf{x}_{t - 1}; \boldsymbol{\mu}_{\theta}(\textbf{x}_t, t), \mathbf{\Sigma}_{\theta}(\textbf{x}_t, t)) \]</span></p>
+<p><span class="math display">\[ L_t = \mathbb{E}_{\textbf{x}_0, \boldsymbol{\epsilon}} \left[ \frac{1}{2 \lVert \mathbf{\Sigma}_{\theta}(\textbf{x}_t, t) \rVert^2_2} \lVert \boldsymbol{\mu}_{\theta}(\textbf{x}_t, t) - \boldsymbol{\mu}_t(\textbf{x}_t, \textbf{x}_0) \rVert^2 \right] \]</span></p>
+<p><span class="math display">\[ \boldsymbol{\mu}_{\theta}(\textbf{x}_t, t) = \frac{1}{\sqrt{\alpha_t}} \left(\textbf{x}_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar{\alpha}_t}} \boldsymbol{\epsilon}_{\theta}(\textbf{x}_t, t) \right) \]</span></p>
+<p><span class="math display">\[ L_t = \mathbb{E}_{\textbf{x}_0, \boldsymbol{\epsilon}} \left[ \frac{(1 - \alpha_t)^2}{2 \alpha_t (1 - \bar{\alpha}_t) \lVert \mathbf{\Sigma}_{\theta} \rVert^2_2} \lVert \boldsymbol{\epsilon}_{\theta}(\textbf{x}_t, t) - \boldsymbol{\epsilon}_t \rVert^2 \right] \]</span></p>
+<p><span class="math display">\[ \color{OrangeRed}{\boxed{L_t^{\text{Simple}} = \mathbb{E}_{t \sim [1, T], \textbf{x}_0, \boldsymbol{\epsilon}_t} \left[\lVert \boldsymbol{\epsilon}_{\theta}((\sqrt{\bar{\alpha_t}}) \textbf{x}_0 + (\sqrt{1 - \bar{\alpha_t}})\boldsymbol{\epsilon}_t , t) - \boldsymbol{\epsilon}_t \rVert^2 \right]}} \]</span></p>
+<p align="center">
+<img src="./DiffAlgo.png" style="width:90%;border:0;">
+</p>
+</section>
+<section id="noise-scheduler" class="level2">
+<h2 class="anchored" data-anchor-id="noise-scheduler">Noise Scheduler</h2>
+<section id="task1-getting-the-noisy-image-given-textbfx_t-t-epsilon" class="level3">
+<h3 class="anchored" data-anchor-id="task1-getting-the-noisy-image-given-textbfx_t-t-epsilon"><strong>Task1:</strong> Getting the noisy image given <span class="math inline">\(\textbf{x}_t, t, \epsilon\)</span></h3>
+<p><span class="math display">\[ \textbf{x}_t, t, \epsilon \to \textbf{x}_t = \sqrt{\bar{\alpha_t}} \textbf{x}_0 + \sqrt{1 - \bar{\alpha_t}} \epsilon \]</span></p>
+<p><span class="math display">\[ \alpha_t = 1 - \beta_t \]</span></p>
+<p><span class="math display">\[ \bar{\alpha}_t = \prod_{i = 1}^t \alpha_i \]</span></p>
+<p>We use linear noise scheduler with <span class="math inline">\(\beta_1 = 10^{-4}\)</span> to <span class="math inline">\(\beta_T = 0.02\)</span> and <span class="math inline">\(T = 1000\)</span> steps between them.</p>
+</section>
+<section id="task2-given-textbfx_t-get-textbfx_t---1" class="level3">
+<h3 class="anchored" data-anchor-id="task2-given-textbfx_t-get-textbfx_t---1"><strong>Task2:</strong> Given <span class="math inline">\(\textbf{x}_t\)</span> get <span class="math inline">\(\textbf{x}_{t - 1}\)</span></h3>
+<p><span class="math display">\[ p_{\theta}(\textbf{x}_{t - 1} | \textbf{x}_t) = \mathcal{N}(\textbf{x}_{t - 1}; \boldsymbol{\mu}_{\theta}(\textbf{x}_t, t), \mathbf{\Sigma}_{\theta}(\textbf{x}_t, t)) \]</span></p>
+<p><span class="math display">\[ \boldsymbol{\mu}_{\theta} = \frac{1}{\sqrt{\alpha_t}} \left(\textbf{x}_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar{\alpha}_t}} \boldsymbol{\epsilon}_{\theta} \right) \]</span></p>
+<p><span class="math display">\[ \Sigma_q(t) = \frac{(1 - \alpha_t) \cdot (1 - \bar{\alpha}_{t - 1})}{(1 - \bar{\alpha}_t)} \mathbb{I} \]</span></p>
+<p><span class="math display">\[
+\begin{align}
+\textbf{x}_{t - 1} = \boldsymbol{\mu}_{\theta} + \sigma_t \textbf{z} &amp;&amp; \textbf{z} \sim \mathcal{N}(\textbf{0}, \mathbb{I})
+\end{align}
+\]</span></p>
+<div id="cell-10" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LinearNoiseScheduler:</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, T, beta_start, beta_end):</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.T <span class="op">=</span> T</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.beta_start <span class="op">=</span> beta_start</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.beta_end <span class="op">=</span> beta_end</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.betas <span class="op">=</span> torch.linspace(beta_start, beta_end, T)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.alphas <span class="op">=</span> <span class="dv">1</span> <span class="op">-</span> <span class="va">self</span>.betas</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.alphas_cumprod <span class="op">=</span> torch.cumprod(<span class="va">self</span>.alphas, dim <span class="op">=</span> <span class="dv">0</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.sqrt_alphas_cumprod <span class="op">=</span> torch.sqrt(<span class="va">self</span>.alphas_cumprod)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.sqrt_1m_alphas_cumprod <span class="op">=</span> torch.sqrt(<span class="dv">1</span> <span class="op">-</span> <span class="va">self</span>.alphas_cumprod)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add_noise(<span class="va">self</span>, original, noise, t):</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        original_shape <span class="op">=</span> original.shape</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        batch_size <span class="op">=</span> original_shape[<span class="dv">0</span>]</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        sqrt_alpha_cum_prod <span class="op">=</span> <span class="va">self</span>.sqrt_alphas_cumprod.to(original.device)[t].reshape(batch_size)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        sqrt_one_minus_alpha_cum_prod <span class="op">=</span> <span class="va">self</span>.sqrt_1m_alphas_cumprod.to(original.device)[t].reshape(batch_size)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(original_shape) <span class="op">-</span> <span class="dv">1</span>):</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>            sqrt_alpha_cum_prod <span class="op">=</span> sqrt_alpha_cum_prod.unsqueeze(<span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(original_shape) <span class="op">-</span> <span class="dv">1</span>):</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>            sqrt_one_minus_alpha_cum_prod <span class="op">=</span> sqrt_one_minus_alpha_cum_prod.unsqueeze(<span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> (sqrt_alpha_cum_prod.to(original.device) <span class="op">*</span> original</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>                <span class="op">+</span> sqrt_one_minus_alpha_cum_prod.to(original.device) <span class="op">*</span> noise)</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> sample_prev_timestep(<span class="va">self</span>, xt, noise_pred, t):</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>        x0 <span class="op">=</span> (xt <span class="op">-</span> (<span class="va">self</span>.sqrt_alphas_cumprod.to(xt.device)[t] <span class="op">*</span> noise_pred)) <span class="op">/</span> <span class="va">self</span>.sqrt_alphas_cumprod.to(xt.device)[t]</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>        x0 <span class="op">=</span> torch.clamp(x0, <span class="op">-</span><span class="fl">1.</span>, <span class="fl">1.</span>)</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>        mean <span class="op">=</span> (xt <span class="op">-</span> ((<span class="va">self</span>.betas.to(xt.device)[t] <span class="op">*</span> noise_pred) <span class="op">/</span> (<span class="va">self</span>.sqrt_1m_alphas_cumprod.to(xt.device)[t]))) <span class="op">/</span> torch.sqrt(<span class="va">self</span>.alphas.to(xt.device)[t])</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> t <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> mean, x0</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>            variance <span class="op">=</span> ((<span class="dv">1</span> <span class="op">-</span> <span class="va">self</span>.alphas_cumprod.to(xt.device)[t <span class="op">-</span> <span class="dv">1</span>]) <span class="op">*</span> <span class="va">self</span>.betas.to(xt.device)[t]) <span class="op">/</span> (<span class="fl">1.</span> <span class="op">-</span> <span class="va">self</span>.alphas_cumprod.to(xt.device)[t])</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>            sigma <span class="op">=</span> variance <span class="op">**</span> <span class="fl">0.5</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>            z <span class="op">=</span> torch.randn(xt.shape).to(xt.device)</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> mean <span class="op">+</span> sigma <span class="op">*</span> z, x0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="model-architecture---unet-inspired" class="level2">
+<h2 class="anchored" data-anchor-id="model-architecture---unet-inspired">Model Architecture - <strong>UNet</strong> inspired</h2>
+<p align="center">
+<img src="./DiffModel.png" style="width:60%;border:0;">
+</p>
+<p align="center">
+<img src="./UNet.png" style="width:60%;border:0;">
+</p>
+<p><span class="math display">\[ \text{DownBlock} \to \text{MidBlock} \to \text{UpBlock} \]</span></p>
+<section id="time-embedding-block" class="level3">
+<h3 class="anchored" data-anchor-id="time-embedding-block"><strong>Time Embedding Block</strong></h3>
+<p>Positional Encoding for a position <span class="math inline">\(t\)</span> of an object, <span class="math inline">\(d\)</span> dimension of output embedding space, <span class="math inline">\(i\)</span> represents column index</p>
+<p align="center">
+<img src="./PocEnc.png" style="width:60%;border:0;">
+</p>
+<p><span class="math display">\[ P(t, 2i) = \sin \left( \frac{t}{10000^{2i/d_{\text{model}}}} \right) \]</span> <span class="math display">\[ P(t, 2i + 1) = \cos \left( \frac{t}{10000^{2i/d_{\text{model}}}} \right) \]</span></p>
+<p><strong>Positional Encoding Block</strong> <span class="math inline">\(\to\)</span> <strong>FC Layer</strong> <span class="math inline">\(\to\)</span> <strong><span class="math inline">\(\text{SiLU}\)</span> Activation</strong> <span class="math inline">\(\to\)</span> <strong>FC Layer</strong></p>
+<div id="cell-14" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_time_embedding(T, d_model):</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    factor <span class="op">=</span> <span class="dv">10000</span> <span class="op">**</span> ((torch.arange(start <span class="op">=</span> <span class="dv">0</span>, end <span class="op">=</span> d_model <span class="op">//</span> <span class="dv">2</span>, dtype <span class="op">=</span> torch.float32, device <span class="op">=</span> T.device)) <span class="op">/</span> (d_model <span class="op">//</span> <span class="dv">2</span>))</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    t_emb <span class="op">=</span> T[:, <span class="va">None</span>].repeat(<span class="dv">1</span>, d_model <span class="op">//</span> <span class="dv">2</span>) <span class="op">/</span> factor</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    t_emb <span class="op">=</span> torch.cat([torch.sin(t_emb), torch.cos(t_emb)], dim <span class="op">=</span> <span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> t_emb</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="downblock-of-unet" class="level3">
+<h3 class="anchored" data-anchor-id="downblock-of-unet"><strong>DownBlock of UNet</strong></h3>
+There can be <strong>multiple layers</strong> of this <span class="math inline">\(\text{ResNet} + \text{Self Attention}\)</span>
+<p align="center">
+<img src="./UNetDown.png" style="width:60%;border:0;" alt="image">
+</p>
+<p align="center">
+<img src="./UNetComp.png" style="width:60%;border:0;" alt="image">
+</p>
+<div id="cell-16" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> DownBlock(nn.Module):</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, in_channels, out_channels, d_model, down_sample, num_heads):</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.down_sample <span class="op">=</span> down_sample</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.resnet_conv_first <span class="op">=</span> nn.Sequential(</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>            nn.GroupNorm(<span class="dv">8</span>, in_channels),</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>            nn.SiLU(),</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>            nn.Conv2d(in_channels, out_channels, kernel_size <span class="op">=</span> <span class="dv">3</span>, stride <span class="op">=</span> <span class="dv">1</span>, padding <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.t_emb_layers <span class="op">=</span> nn.Sequential(</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>            nn.SiLU(),</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>            nn.Linear(d_model, out_channels)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.resnet_conv_second <span class="op">=</span> nn.Sequential(</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>            nn.GroupNorm(<span class="dv">8</span>, out_channels),</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>            nn.SiLU(),</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>            nn.Conv2d(out_channels, out_channels, kernel_size <span class="op">=</span> <span class="dv">3</span>, stride <span class="op">=</span> <span class="dv">1</span>, padding <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.attention_norm <span class="op">=</span> nn.GroupNorm(<span class="dv">8</span>, out_channels)</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.attention <span class="op">=</span> nn.MultiheadAttention(out_channels, num_heads, batch_first <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.residual_input_conv <span class="op">=</span> nn.Conv2d(in_channels, out_channels, kernel_size <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.down_sample_conv <span class="op">=</span> nn.Conv2d(out_channels, out_channels, kernel_size <span class="op">=</span> <span class="dv">4</span>, stride <span class="op">=</span> <span class="dv">2</span>, padding <span class="op">=</span> <span class="dv">1</span>) <span class="cf">if</span> <span class="va">self</span>.down_sample <span class="cf">else</span> nn.Identity()</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x, t_emb):</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> x</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>        <span class="co"># ResNet Block</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>        resnet_input <span class="op">=</span> out</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> <span class="va">self</span>.resnet_conv_first(out)</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> out <span class="op">+</span> <span class="va">self</span>.t_emb_layers(t_emb)[:, :, <span class="va">None</span>, <span class="va">None</span>]</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> <span class="va">self</span>.resnet_conv_second(out)</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> out <span class="op">+</span> <span class="va">self</span>.residual_input_conv(resnet_input)</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Attention Block</span></span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>        batch_size, channels, h, w <span class="op">=</span> out.shape</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>        in_attn <span class="op">=</span> out.reshape(batch_size, channels, h <span class="op">*</span> w)</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>        in_attn <span class="op">=</span> <span class="va">self</span>.attention_norm(in_attn)</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>        in_attn <span class="op">=</span> in_attn.transpose(<span class="dv">1</span>, <span class="dv">2</span>)</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>        out_attn, _ <span class="op">=</span> <span class="va">self</span>.attention(in_attn, in_attn, in_attn)</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>        out_attn <span class="op">=</span> out_attn.transpose(<span class="dv">1</span>, <span class="dv">2</span>).reshape(batch_size, channels, h, w)</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> out <span class="op">+</span> out_attn</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> <span class="va">self</span>.down_sample_conv(out)</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> out</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-17" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MidBlock(nn.Module):</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, in_channels, out_channels, d_model, num_heads):</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.resnet_conv_first <span class="op">=</span> nn.ModuleList([</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>            nn.Sequential(</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                nn.GroupNorm(<span class="dv">8</span>, in_channels),</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                nn.SiLU(),</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>                nn.Conv2d(in_channels, out_channels, kernel_size <span class="op">=</span> <span class="dv">3</span>, stride <span class="op">=</span> <span class="dv">1</span>, padding <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>            nn.Sequential(</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>                nn.GroupNorm(<span class="dv">8</span>, out_channels),</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>                nn.SiLU(),</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>                nn.Conv2d(out_channels, out_channels, kernel_size <span class="op">=</span> <span class="dv">3</span>, stride <span class="op">=</span> <span class="dv">1</span>, padding <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>        ])</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.t_emb_layers <span class="op">=</span> nn.ModuleList([</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>            nn.Sequential(</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>                nn.SiLU(),</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>                nn.Linear(d_model, out_channels)</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>            nn.Sequential(</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>                nn.SiLU(),</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>                nn.Linear(d_model, out_channels)</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>        ])</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.resnet_conv_second <span class="op">=</span> nn.ModuleList([</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>            nn.Sequential(</span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>                nn.GroupNorm(<span class="dv">8</span>, out_channels),</span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>                nn.SiLU(),</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>                nn.Conv2d(out_channels, out_channels, kernel_size <span class="op">=</span> <span class="dv">3</span>, stride <span class="op">=</span> <span class="dv">1</span>, padding <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>            nn.Sequential(</span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>                nn.GroupNorm(<span class="dv">8</span>, out_channels),</span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>                nn.SiLU(),</span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a>                nn.Conv2d(out_channels, out_channels, kernel_size <span class="op">=</span> <span class="dv">3</span>, stride <span class="op">=</span> <span class="dv">1</span>, padding <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a>        ])</span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.attention_norm <span class="op">=</span> nn.GroupNorm(<span class="dv">8</span>, out_channels)</span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.attention <span class="op">=</span> nn.MultiheadAttention(out_channels, num_heads, batch_first <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.residual_input_conv <span class="op">=</span> nn.ModuleList([</span>
+<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a>            nn.Conv2d(in_channels, out_channels, kernel_size <span class="op">=</span> <span class="dv">1</span>),</span>
+<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a>            nn.Conv2d(out_channels, out_channels, kernel_size <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a>        ])</span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x, t_emb):</span>
+<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> x</span>
+<span id="cb10-52"><a href="#cb10-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a>        <span class="co"># First ResNet Block</span></span>
+<span id="cb10-54"><a href="#cb10-54" aria-hidden="true" tabindex="-1"></a>        resnet_input <span class="op">=</span> out</span>
+<span id="cb10-55"><a href="#cb10-55" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> <span class="va">self</span>.resnet_conv_first[<span class="dv">0</span>](out)</span>
+<span id="cb10-56"><a href="#cb10-56" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> out <span class="op">+</span> <span class="va">self</span>.t_emb_layers[<span class="dv">0</span>](t_emb)[:, :, <span class="va">None</span>, <span class="va">None</span>]</span>
+<span id="cb10-57"><a href="#cb10-57" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> <span class="va">self</span>.resnet_conv_second[<span class="dv">0</span>](out)</span>
+<span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> out <span class="op">+</span> <span class="va">self</span>.residual_input_conv[<span class="dv">0</span>](resnet_input)</span>
+<span id="cb10-59"><a href="#cb10-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-60"><a href="#cb10-60" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Attention Block</span></span>
+<span id="cb10-61"><a href="#cb10-61" aria-hidden="true" tabindex="-1"></a>        batch_size, channels, h, w <span class="op">=</span> out.shape</span>
+<span id="cb10-62"><a href="#cb10-62" aria-hidden="true" tabindex="-1"></a>        in_attn <span class="op">=</span> out.reshape(batch_size, channels, h <span class="op">*</span> w)</span>
+<span id="cb10-63"><a href="#cb10-63" aria-hidden="true" tabindex="-1"></a>        in_attn <span class="op">=</span> <span class="va">self</span>.attention_norm(in_attn)</span>
+<span id="cb10-64"><a href="#cb10-64" aria-hidden="true" tabindex="-1"></a>        in_attn <span class="op">=</span> in_attn.transpose(<span class="dv">1</span>, <span class="dv">2</span>)</span>
+<span id="cb10-65"><a href="#cb10-65" aria-hidden="true" tabindex="-1"></a>        out_attn, _ <span class="op">=</span> <span class="va">self</span>.attention(in_attn, in_attn, in_attn)</span>
+<span id="cb10-66"><a href="#cb10-66" aria-hidden="true" tabindex="-1"></a>        out_attn <span class="op">=</span> out_attn.transpose(<span class="dv">1</span>, <span class="dv">2</span>).reshape(batch_size, channels, h, w)</span>
+<span id="cb10-67"><a href="#cb10-67" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> out <span class="op">+</span> out_attn</span>
+<span id="cb10-68"><a href="#cb10-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-69"><a href="#cb10-69" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Second ResNet Block</span></span>
+<span id="cb10-70"><a href="#cb10-70" aria-hidden="true" tabindex="-1"></a>        resnet_input <span class="op">=</span> out</span>
+<span id="cb10-71"><a href="#cb10-71" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> <span class="va">self</span>.resnet_conv_first[<span class="dv">1</span>](out)</span>
+<span id="cb10-72"><a href="#cb10-72" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> out <span class="op">+</span> <span class="va">self</span>.t_emb_layers[<span class="dv">1</span>](t_emb)[:, :, <span class="va">None</span>, <span class="va">None</span>]</span>
+<span id="cb10-73"><a href="#cb10-73" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> <span class="va">self</span>.resnet_conv_second[<span class="dv">1</span>](out)</span>
+<span id="cb10-74"><a href="#cb10-74" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> out <span class="op">+</span> <span class="va">self</span>.residual_input_conv[<span class="dv">1</span>](resnet_input)</span>
+<span id="cb10-75"><a href="#cb10-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-76"><a href="#cb10-76" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> out</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-18" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> UpBlock(nn.Module):</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, in_channels, out_channels, d_model, up_sample, num_heads):</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.up_sample <span class="op">=</span> up_sample</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.resnet_conv_first <span class="op">=</span> nn.Sequential(</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>            nn.GroupNorm(<span class="dv">8</span>, in_channels),</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>            nn.SiLU(),</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>            nn.Conv2d(in_channels, out_channels, kernel_size <span class="op">=</span> <span class="dv">3</span>, stride <span class="op">=</span> <span class="dv">1</span>, padding <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.t_emb_layers <span class="op">=</span> nn.Sequential(</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>            nn.SiLU(),</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>            nn.Linear(d_model, out_channels)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.resnet_conv_second <span class="op">=</span> nn.Sequential(</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>            nn.GroupNorm(<span class="dv">8</span>, out_channels),</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>            nn.SiLU(),</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>            nn.Conv2d(out_channels, out_channels, kernel_size <span class="op">=</span> <span class="dv">3</span>, stride <span class="op">=</span> <span class="dv">1</span>, padding <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.attention_norm <span class="op">=</span> nn.GroupNorm(<span class="dv">8</span>, out_channels)</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.attention <span class="op">=</span> nn.MultiheadAttention(out_channels, num_heads, batch_first <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.residual_input_conv <span class="op">=</span> nn.Conv2d(in_channels, out_channels, kernel_size <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.up_sample_conv <span class="op">=</span> nn.ConvTranspose2d(in_channels <span class="op">//</span> <span class="dv">2</span>, in_channels <span class="op">//</span> <span class="dv">2</span>,</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>                                                 <span class="dv">4</span>, <span class="dv">2</span>, <span class="dv">1</span>) <span class="op">\</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="va">self</span>.up_sample <span class="cf">else</span> nn.Identity()</span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x, out_down, t_emb):</span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>        x <span class="op">=</span> <span class="va">self</span>.up_sample_conv(x)</span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>        <span class="co"># if x.shape[2:] != out_down.shape[2:]:</span></span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>        <span class="co">#     x = F.interpolate(x, size=out_down.shape[2:], mode = "nearest")</span></span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>        x <span class="op">=</span> torch.cat([x, out_down], dim <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>        <span class="co"># ResNet Block</span></span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> x</span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>        resnet_input <span class="op">=</span> out</span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> <span class="va">self</span>.resnet_conv_first(out)</span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> out <span class="op">+</span> <span class="va">self</span>.t_emb_layers(t_emb)[:, :, <span class="va">None</span>, <span class="va">None</span>]</span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> <span class="va">self</span>.resnet_conv_second(out)</span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> out <span class="op">+</span> <span class="va">self</span>.residual_input_conv(resnet_input)</span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Attention Block</span></span>
+<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a>        batch_size, channels, h, w <span class="op">=</span> out.shape</span>
+<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a>        in_attn <span class="op">=</span> out.reshape(batch_size, channels, h <span class="op">*</span> w)</span>
+<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a>        in_attn <span class="op">=</span> <span class="va">self</span>.attention_norm(in_attn)</span>
+<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a>        in_attn <span class="op">=</span> in_attn.transpose(<span class="dv">1</span>, <span class="dv">2</span>)</span>
+<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a>        out_attn, _ <span class="op">=</span> <span class="va">self</span>.attention(in_attn, in_attn, in_attn)</span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>        out_attn <span class="op">=</span> out_attn.transpose(<span class="dv">1</span>, <span class="dv">2</span>).reshape(batch_size, channels, h, w)</span>
+<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> out <span class="op">+</span> out_attn</span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> out</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-19" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> UNet(nn.Module):</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, im_channels):</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.down_channels <span class="op">=</span> [<span class="dv">32</span>, <span class="dv">64</span>, <span class="dv">128</span>, <span class="dv">256</span>]</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.mid_channels <span class="op">=</span> [<span class="dv">256</span>, <span class="dv">256</span>, <span class="dv">128</span>]</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.d_model <span class="op">=</span> <span class="dv">128</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.down_sample <span class="op">=</span> [<span class="va">True</span>, <span class="va">True</span>, <span class="va">False</span>]</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.t_proj <span class="op">=</span> nn.Sequential(</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>            nn.Linear(<span class="va">self</span>.d_model, <span class="va">self</span>.d_model),</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>            nn.SiLU(),</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>            nn.Linear(<span class="va">self</span>.d_model, <span class="va">self</span>.d_model)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.up_sample <span class="op">=</span> <span class="bu">list</span>(<span class="bu">reversed</span>(<span class="va">self</span>.down_sample))</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.conv_in <span class="op">=</span> nn.Conv2d(im_channels, <span class="va">self</span>.down_channels[<span class="dv">0</span>], kernel_size <span class="op">=</span> <span class="dv">3</span>, padding <span class="op">=</span> (<span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.downs <span class="op">=</span> nn.ModuleList([])</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(<span class="va">self</span>.down_channels) <span class="op">-</span> <span class="dv">1</span>):</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.downs.append(DownBlock(<span class="va">self</span>.down_channels[i], <span class="va">self</span>.down_channels[i <span class="op">+</span> <span class="dv">1</span>], <span class="va">self</span>.d_model, down_sample <span class="op">=</span> <span class="va">self</span>.down_sample[i], num_heads <span class="op">=</span> <span class="dv">4</span>))</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.mids <span class="op">=</span> nn.ModuleList([])</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(<span class="va">self</span>.mid_channels) <span class="op">-</span> <span class="dv">1</span>):</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.mids.append(MidBlock(<span class="va">self</span>.mid_channels[i], <span class="va">self</span>.mid_channels[i <span class="op">+</span> <span class="dv">1</span>], <span class="va">self</span>.d_model, num_heads <span class="op">=</span> <span class="dv">4</span>))</span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.ups <span class="op">=</span> nn.ModuleList([])</span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">reversed</span>(<span class="bu">range</span>(<span class="bu">len</span>(<span class="va">self</span>.down_channels) <span class="op">-</span> <span class="dv">1</span>)):</span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.ups.append(UpBlock(<span class="va">self</span>.down_channels[i] <span class="op">*</span> <span class="dv">2</span>, <span class="va">self</span>.down_channels[i <span class="op">-</span> <span class="dv">1</span>] <span class="cf">if</span> i <span class="op">!=</span> <span class="dv">0</span> <span class="cf">else</span> <span class="dv">16</span>, <span class="va">self</span>.d_model, up_sample <span class="op">=</span> <span class="va">self</span>.down_sample[i], num_heads <span class="op">=</span> <span class="dv">4</span>))</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.norm_out <span class="op">=</span> nn.GroupNorm(<span class="dv">8</span>, <span class="dv">16</span>)</span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.conv_out <span class="op">=</span> nn.Conv2d(<span class="dv">16</span>, im_channels, kernel_size <span class="op">=</span> <span class="dv">3</span>, padding <span class="op">=</span> <span class="dv">1</span>)</span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x, t):</span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> <span class="va">self</span>.conv_in(x)</span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>        t_emb <span class="op">=</span> <span class="va">self</span>.t_proj(get_time_embedding(torch.as_tensor(t).<span class="bu">long</span>(), <span class="va">self</span>.d_model))</span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>        down_outs <span class="op">=</span> []</span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> down <span class="kw">in</span> <span class="va">self</span>.downs:</span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a>            down_outs.append(out)</span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>            out <span class="op">=</span> down(out, t_emb)</span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> mid <span class="kw">in</span> <span class="va">self</span>.mids:</span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>            out <span class="op">=</span> mid(out, t_emb)</span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> up <span class="kw">in</span> <span class="va">self</span>.ups:</span>
+<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a>            down_out <span class="op">=</span> down_outs.pop()</span>
+<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a>            out <span class="op">=</span> up(out, down_out, t_emb)</span>
+<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> <span class="va">self</span>.norm_out(out)</span>
+<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> nn.SiLU()(out)</span>
+<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> <span class="va">self</span>.conv_out(out)</span>
+<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> out</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-20" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Train Parameters</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>batch_size <span class="op">=</span> <span class="dv">64</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>num_epochs <span class="op">=</span> <span class="dv">40</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>lr <span class="op">=</span> <span class="fl">1e-4</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>num_grid_rows <span class="op">=</span> <span class="dv">8</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>num_samples <span class="op">=</span> <span class="dv">64</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Diffusion Parameters</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>beta_start <span class="op">=</span> <span class="fl">1e-4</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>beta_end <span class="op">=</span> <span class="fl">0.02</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>T <span class="op">=</span> <span class="dv">1000</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Model Parameters</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>nc <span class="op">=</span> <span class="dv">3</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>image_size <span class="op">=</span> <span class="dv">32</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-21" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>transform <span class="op">=</span> transforms.Compose([transforms.Resize(image_size), transforms.CenterCrop(image_size), transforms.ToTensor(), transforms.Normalize([<span class="fl">0.5</span> <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(nc)], [<span class="fl">0.5</span> <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(nc)])])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-22" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>celebADataset <span class="op">=</span> datasets.ImageFolder(root <span class="op">=</span> <span class="st">"./CelebA"</span>, transform <span class="op">=</span> transform)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>celebALoader <span class="op">=</span> DataLoader(dataset <span class="op">=</span> celebADataset, batch_size <span class="op">=</span> batch_size, shuffle <span class="op">=</span> <span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-23" class="cell" data-outputid="48a29f96-d005-42aa-b1a5-7e3fa3432c89" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>scheduler <span class="op">=</span> LinearNoiseScheduler(T, beta_start, beta_end)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> UNet(nc).to(device)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>model.train()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="15">
+<pre><code>UNet(
+  (t_proj): Sequential(
+    (0): Linear(in_features=128, out_features=128, bias=True)
+    (1): SiLU()
+    (2): Linear(in_features=128, out_features=128, bias=True)
+  )
+  (conv_in): Conv2d(3, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (downs): ModuleList(
+    (0): DownBlock(
+      (resnet_conv_first): Sequential(
+        (0): GroupNorm(8, 32, eps=1e-05, affine=True)
+        (1): SiLU()
+        (2): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+      (t_emb_layers): Sequential(
+        (0): SiLU()
+        (1): Linear(in_features=128, out_features=64, bias=True)
+      )
+      (resnet_conv_second): Sequential(
+        (0): GroupNorm(8, 64, eps=1e-05, affine=True)
+        (1): SiLU()
+        (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+      (attention_norm): GroupNorm(8, 64, eps=1e-05, affine=True)
+      (attention): MultiheadAttention(
+        (out_proj): NonDynamicallyQuantizableLinear(in_features=64, out_features=64, bias=True)
+      )
+      (residual_input_conv): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1))
+      (down_sample_conv): Conv2d(64, 64, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1))
+    )
+    (1): DownBlock(
+      (resnet_conv_first): Sequential(
+        (0): GroupNorm(8, 64, eps=1e-05, affine=True)
+        (1): SiLU()
+        (2): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+      (t_emb_layers): Sequential(
+        (0): SiLU()
+        (1): Linear(in_features=128, out_features=128, bias=True)
+      )
+      (resnet_conv_second): Sequential(
+        (0): GroupNorm(8, 128, eps=1e-05, affine=True)
+        (1): SiLU()
+        (2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+      (attention_norm): GroupNorm(8, 128, eps=1e-05, affine=True)
+      (attention): MultiheadAttention(
+        (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=True)
+      )
+      (residual_input_conv): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1))
+      (down_sample_conv): Conv2d(128, 128, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1))
+    )
+    (2): DownBlock(
+      (resnet_conv_first): Sequential(
+        (0): GroupNorm(8, 128, eps=1e-05, affine=True)
+        (1): SiLU()
+        (2): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+      (t_emb_layers): Sequential(
+        (0): SiLU()
+        (1): Linear(in_features=128, out_features=256, bias=True)
+      )
+      (resnet_conv_second): Sequential(
+        (0): GroupNorm(8, 256, eps=1e-05, affine=True)
+        (1): SiLU()
+        (2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+      (attention_norm): GroupNorm(8, 256, eps=1e-05, affine=True)
+      (attention): MultiheadAttention(
+        (out_proj): NonDynamicallyQuantizableLinear(in_features=256, out_features=256, bias=True)
+      )
+      (residual_input_conv): Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1))
+      (down_sample_conv): Identity()
+    )
+  )
+  (mids): ModuleList(
+    (0): MidBlock(
+      (resnet_conv_first): ModuleList(
+        (0-1): 2 x Sequential(
+          (0): GroupNorm(8, 256, eps=1e-05, affine=True)
+          (1): SiLU()
+          (2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        )
+      )
+      (t_emb_layers): ModuleList(
+        (0-1): 2 x Sequential(
+          (0): SiLU()
+          (1): Linear(in_features=128, out_features=256, bias=True)
+        )
+      )
+      (resnet_conv_second): ModuleList(
+        (0-1): 2 x Sequential(
+          (0): GroupNorm(8, 256, eps=1e-05, affine=True)
+          (1): SiLU()
+          (2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        )
+      )
+      (attention_norm): GroupNorm(8, 256, eps=1e-05, affine=True)
+      (attention): MultiheadAttention(
+        (out_proj): NonDynamicallyQuantizableLinear(in_features=256, out_features=256, bias=True)
+      )
+      (residual_input_conv): ModuleList(
+        (0-1): 2 x Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1))
+      )
+    )
+    (1): MidBlock(
+      (resnet_conv_first): ModuleList(
+        (0): Sequential(
+          (0): GroupNorm(8, 256, eps=1e-05, affine=True)
+          (1): SiLU()
+          (2): Conv2d(256, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        )
+        (1): Sequential(
+          (0): GroupNorm(8, 128, eps=1e-05, affine=True)
+          (1): SiLU()
+          (2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        )
+      )
+      (t_emb_layers): ModuleList(
+        (0-1): 2 x Sequential(
+          (0): SiLU()
+          (1): Linear(in_features=128, out_features=128, bias=True)
+        )
+      )
+      (resnet_conv_second): ModuleList(
+        (0-1): 2 x Sequential(
+          (0): GroupNorm(8, 128, eps=1e-05, affine=True)
+          (1): SiLU()
+          (2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        )
+      )
+      (attention_norm): GroupNorm(8, 128, eps=1e-05, affine=True)
+      (attention): MultiheadAttention(
+        (out_proj): NonDynamicallyQuantizableLinear(in_features=128, out_features=128, bias=True)
+      )
+      (residual_input_conv): ModuleList(
+        (0): Conv2d(256, 128, kernel_size=(1, 1), stride=(1, 1))
+        (1): Conv2d(128, 128, kernel_size=(1, 1), stride=(1, 1))
+      )
+    )
+  )
+  (ups): ModuleList(
+    (0): UpBlock(
+      (resnet_conv_first): Sequential(
+        (0): GroupNorm(8, 256, eps=1e-05, affine=True)
+        (1): SiLU()
+        (2): Conv2d(256, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+      (t_emb_layers): Sequential(
+        (0): SiLU()
+        (1): Linear(in_features=128, out_features=64, bias=True)
+      )
+      (resnet_conv_second): Sequential(
+        (0): GroupNorm(8, 64, eps=1e-05, affine=True)
+        (1): SiLU()
+        (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+      (attention_norm): GroupNorm(8, 64, eps=1e-05, affine=True)
+      (attention): MultiheadAttention(
+        (out_proj): NonDynamicallyQuantizableLinear(in_features=64, out_features=64, bias=True)
+      )
+      (residual_input_conv): Conv2d(256, 64, kernel_size=(1, 1), stride=(1, 1))
+      (up_sample_conv): Identity()
+    )
+    (1): UpBlock(
+      (resnet_conv_first): Sequential(
+        (0): GroupNorm(8, 128, eps=1e-05, affine=True)
+        (1): SiLU()
+        (2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+      (t_emb_layers): Sequential(
+        (0): SiLU()
+        (1): Linear(in_features=128, out_features=32, bias=True)
+      )
+      (resnet_conv_second): Sequential(
+        (0): GroupNorm(8, 32, eps=1e-05, affine=True)
+        (1): SiLU()
+        (2): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+      (attention_norm): GroupNorm(8, 32, eps=1e-05, affine=True)
+      (attention): MultiheadAttention(
+        (out_proj): NonDynamicallyQuantizableLinear(in_features=32, out_features=32, bias=True)
+      )
+      (residual_input_conv): Conv2d(128, 32, kernel_size=(1, 1), stride=(1, 1))
+      (up_sample_conv): ConvTranspose2d(64, 64, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1))
+    )
+    (2): UpBlock(
+      (resnet_conv_first): Sequential(
+        (0): GroupNorm(8, 64, eps=1e-05, affine=True)
+        (1): SiLU()
+        (2): Conv2d(64, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+      (t_emb_layers): Sequential(
+        (0): SiLU()
+        (1): Linear(in_features=128, out_features=16, bias=True)
+      )
+      (resnet_conv_second): Sequential(
+        (0): GroupNorm(8, 16, eps=1e-05, affine=True)
+        (1): SiLU()
+        (2): Conv2d(16, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+      (attention_norm): GroupNorm(8, 16, eps=1e-05, affine=True)
+      (attention): MultiheadAttention(
+        (out_proj): NonDynamicallyQuantizableLinear(in_features=16, out_features=16, bias=True)
+      )
+      (residual_input_conv): Conv2d(64, 16, kernel_size=(1, 1), stride=(1, 1))
+      (up_sample_conv): ConvTranspose2d(32, 32, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1))
+    )
+  )
+  (norm_out): GroupNorm(8, 16, eps=1e-05, affine=True)
+  (conv_out): Conv2d(16, 3, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+)</code></pre>
+</div>
+</div>
+<div id="cell-24" class="cell" data-outputid="eb33126e-7196-40ce-b83a-de9500a1b9aa" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>optimizer <span class="op">=</span> torch.optim.Adam(model.parameters(), lr <span class="op">=</span> lr)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>criterion <span class="op">=</span> nn.MSELoss()</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> epoch <span class="kw">in</span> <span class="bu">range</span>(num_epochs):</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    losses <span class="op">=</span> []</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, (images, _) <span class="kw">in</span> <span class="bu">enumerate</span>(celebALoader):</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>        optimizer.zero_grad()</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>        images <span class="op">=</span> images.<span class="bu">float</span>().to(device)</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>        noise <span class="op">=</span> torch.randn_like(images).to(device)</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>        t <span class="op">=</span> torch.randint(<span class="dv">0</span>, T, (images.shape[<span class="dv">0</span>],)).to(device)</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>        noisy_img <span class="op">=</span> scheduler.add_noise(images, noise, t)</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>        noise_pred <span class="op">=</span> model(noisy_img, t)</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>        loss <span class="op">=</span> criterion(noise_pred, noise)</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>        losses.append(loss.item())</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>        loss.backward()</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>        optimizer.step()</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>        <span class="kw">del</span> images</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>        <span class="kw">del</span> noisy_img</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>        <span class="kw">del</span> noise_pred</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>        <span class="kw">del</span> noise</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Epoch [</span><span class="sc">{</span>epoch <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>num_epochs<span class="sc">}</span><span class="ss">], Loss: </span><span class="sc">{</span>np<span class="sc">.</span>mean(losses)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>    torch.save(model.state_dict(), <span class="st">"denoiseModelCeleb.pth"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Epoch [1/40], Loss: 0.10160287155752704
+Epoch [2/40], Loss: 0.03667867321118628
+Epoch [3/40], Loss: 0.03253764333056353
+Epoch [4/40], Loss: 0.03081813406649876
+Epoch [5/40], Loss: 0.029599356160287946
+Epoch [6/40], Loss: 0.02917470770669761
+Epoch [7/40], Loss: 0.028544318118613316
+Epoch [8/40], Loss: 0.028117591563132146
+Epoch [9/40], Loss: 0.027740449694485952
+Epoch [10/40], Loss: 0.027557271074113012</code></pre>
+</div>
+<div class="cell-output cell-output-error">
+<pre><code>KeyboardInterrupt: </code></pre>
+</div>
+</div>
+<div id="cell-25" class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>device <span class="op">=</span> torch.device(<span class="st">"cuda"</span> <span class="cf">if</span> torch.cuda.is_available() <span class="cf">else</span> <span class="st">"cpu"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-26" class="cell" data-outputid="839c120f-8f48-4b24-dc4d-4197a54b2d46" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>scheduler <span class="op">=</span> LinearNoiseScheduler(T, beta_start, beta_end)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> UNet(nc).to(device)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>model.load_state_dict(torch.load(<span class="st">"./denoiseModelCeleb.pth"</span>, map_location <span class="op">=</span> device))</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>model.<span class="bu">eval</span>()</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    xt <span class="op">=</span> torch.randn((num_samples, nc, image_size, image_size)).to(device)</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> <span class="bu">reversed</span>(<span class="bu">range</span>(T)):</span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>        noise_pred <span class="op">=</span> model(xt, torch.as_tensor(t).unsqueeze(<span class="dv">0</span>).to(device))</span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>        xt, x0_pred <span class="op">=</span> scheduler.sample_prev_timestep(xt, noise_pred, torch.as_tensor(t).to(device))</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>        ims <span class="op">=</span> torch.clamp(xt, <span class="op">-</span><span class="fl">1.</span>, <span class="fl">1.</span>).detach().cpu()</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>        ims <span class="op">=</span> (ims <span class="op">+</span> <span class="dv">1</span>) <span class="op">/</span> <span class="dv">2</span></span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>        grid <span class="op">=</span> vutils.make_grid(ims, nrow <span class="op">=</span> num_grid_rows)</span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (t <span class="op">%</span> <span class="dv">50</span> <span class="op">==</span> <span class="dv">0</span>):</span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>            plt.figure(figsize <span class="op">=</span> (<span class="dv">10</span>, <span class="dv">10</span>))</span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>            plt.axis(<span class="st">"off"</span>)</span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a>            <span class="co"># plt.title(f"t = {t}")</span></span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a>            plt.imshow(np.transpose(grid.cpu().detach().numpy(), (<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">0</span>)))</span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a>            plt.show()</span>
+<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a>        img <span class="op">=</span> transforms.ToPILImage()(grid)</span>
+<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> os.path.exists(<span class="st">"./DDPM/Celeb"</span>):</span>
+<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a>            os.makedirs(<span class="st">"./DDPM/Celeb"</span>)</span>
+<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a>        img.save(<span class="ss">f"./DDPM/Celeb/x0_</span><span class="sc">{</span>t<span class="sc">}</span><span class="ss">.png"</span>)</span>
+<span id="cb22-32"><a href="#cb22-32" aria-hidden="true" tabindex="-1"></a>        img.close()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-2.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-3.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-4.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-5.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-6.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-7.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-8.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-9.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-10.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-11.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-12.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-13.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-14.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-15.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-16.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-17.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-18.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-19.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DDPM_Celeb_files/figure-html/cell-18-output-20.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="cell-27" class="cell" data-outputid="d2f220a7-6007-44f5-aaa7-c7b74c6a0def" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="op">!</span><span class="bu">zip</span> <span class="op">-</span>r .<span class="op">/</span>DDPM.<span class="bu">zip</span> .<span class="op">/</span>DDPM<span class="op">/</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  adding: DDPM/ (stored 0%)
+  adding: DDPM/Celeb/ (stored 0%)
+  adding: DDPM/Celeb/x0_493.png (deflated 0%)
+  adding: DDPM/Celeb/x0_266.png (deflated 0%)
+  adding: DDPM/Celeb/x0_136.png (deflated 0%)
+  adding: DDPM/Celeb/x0_314.png (deflated 0%)
+  adding: DDPM/Celeb/x0_460.png (deflated 0%)
+  adding: DDPM/Celeb/x0_500.png (deflated 0%)
+  adding: DDPM/Celeb/x0_318.png (deflated 0%)
+  adding: DDPM/Celeb/x0_230.png (deflated 0%)
+  adding: DDPM/Celeb/x0_298.png (deflated 0%)
+  adding: DDPM/Celeb/x0_401.png (deflated 0%)
+  adding: DDPM/Celeb/x0_752.png (deflated 0%)
+  adding: DDPM/Celeb/x0_675.png (deflated 0%)
+  adding: DDPM/Celeb/x0_601.png (deflated 0%)
+  adding: DDPM/Celeb/x0_883.png (deflated 0%)
+  adding: DDPM/Celeb/x0_216.png (deflated 0%)
+  adding: DDPM/Celeb/x0_605.png (deflated 0%)
+  adding: DDPM/Celeb/x0_839.png (deflated 0%)
+  adding: DDPM/Celeb/x0_496.png (deflated 0%)
+  adding: DDPM/Celeb/x0_749.png (deflated 0%)
+  adding: DDPM/Celeb/x0_499.png (deflated 0%)
+  adding: DDPM/Celeb/x0_771.png (deflated 0%)
+  adding: DDPM/Celeb/x0_763.png (deflated 0%)
+  adding: DDPM/Celeb/x0_169.png (deflated 0%)
+  adding: DDPM/Celeb/x0_878.png (deflated 0%)
+  adding: DDPM/Celeb/x0_914.png (deflated 0%)
+  adding: DDPM/Celeb/x0_916.png (deflated 0%)
+  adding: DDPM/Celeb/x0_119.png (deflated 0%)
+  adding: DDPM/Celeb/x0_743.png (deflated 0%)
+  adding: DDPM/Celeb/x0_982.png (deflated 0%)
+  adding: DDPM/Celeb/x0_992.png (deflated 0%)
+  adding: DDPM/Celeb/x0_214.png (deflated 0%)
+  adding: DDPM/Celeb/x0_699.png (deflated 0%)
+  adding: DDPM/Celeb/x0_842.png (deflated 0%)
+  adding: DDPM/Celeb/x0_307.png (deflated 0%)
+  adding: DDPM/Celeb/x0_931.png (deflated 0%)
+  adding: DDPM/Celeb/x0_741.png (deflated 0%)
+  adding: DDPM/Celeb/x0_824.png (deflated 0%)
+  adding: DDPM/Celeb/x0_423.png (deflated 0%)
+  adding: DDPM/Celeb/x0_696.png (deflated 0%)
+  adding: DDPM/Celeb/x0_618.png (deflated 0%)
+  adding: DDPM/Celeb/x0_756.png (deflated 0%)
+  adding: DDPM/Celeb/x0_86.png (deflated 0%)
+  adding: DDPM/Celeb/x0_35.png (deflated 0%)
+  adding: DDPM/Celeb/x0_14.png (deflated 0%)
+  adding: DDPM/Celeb/x0_550.png (deflated 0%)
+  adding: DDPM/Celeb/x0_142.png (deflated 0%)
+  adding: DDPM/Celeb/x0_95.png (deflated 0%)
+  adding: DDPM/Celeb/x0_110.png (deflated 0%)
+  adding: DDPM/Celeb/x0_556.png (deflated 0%)
+  adding: DDPM/Celeb/x0_359.png (deflated 0%)
+  adding: DDPM/Celeb/x0_530.png (deflated 0%)
+  adding: DDPM/Celeb/x0_81.png (deflated 0%)
+  adding: DDPM/Celeb/x0_225.png (deflated 0%)
+  adding: DDPM/Celeb/x0_750.png (deflated 0%)
+  adding: DDPM/Celeb/x0_723.png (deflated 0%)
+  adding: DDPM/Celeb/x0_545.png (deflated 0%)
+  adding: DDPM/Celeb/x0_932.png (deflated 0%)
+  adding: DDPM/Celeb/x0_525.png (deflated 0%)
+  adding: DDPM/Celeb/x0_891.png (deflated 0%)
+  adding: DDPM/Celeb/x0_173.png (deflated 0%)
+  adding: DDPM/Celeb/x0_240.png (deflated 0%)
+  adding: DDPM/Celeb/x0_260.png (deflated 0%)
+  adding: DDPM/Celeb/x0_912.png (deflated 0%)
+  adding: DDPM/Celeb/x0_273.png (deflated 0%)
+  adding: DDPM/Celeb/x0_441.png (deflated 0%)
+  adding: DDPM/Celeb/x0_281.png (deflated 0%)
+  adding: DDPM/Celeb/x0_243.png (deflated 0%)
+  adding: DDPM/Celeb/x0_770.png (deflated 0%)
+  adding: DDPM/Celeb/x0_182.png (deflated 0%)
+  adding: DDPM/Celeb/x0_677.png (deflated 0%)
+  adding: DDPM/Celeb/x0_573.png (deflated 0%)
+  adding: DDPM/Celeb/x0_560.png (deflated 0%)
+  adding: DDPM/Celeb/x0_66.png (deflated 0%)
+  adding: DDPM/Celeb/x0_880.png (deflated 0%)
+  adding: DDPM/Celeb/x0_510.png (deflated 0%)
+  adding: DDPM/Celeb/x0_352.png (deflated 0%)
+  adding: DDPM/Celeb/x0_101.png (deflated 0%)
+  adding: DDPM/Celeb/x0_821.png (deflated 0%)
+  adding: DDPM/Celeb/x0_961.png (deflated 0%)
+  adding: DDPM/Celeb/x0_364.png (deflated 0%)
+  adding: DDPM/Celeb/x0_269.png (deflated 0%)
+  adding: DDPM/Celeb/x0_512.png (deflated 0%)
+  adding: DDPM/Celeb/x0_935.png (deflated 0%)
+  adding: DDPM/Celeb/x0_380.png (deflated 0%)
+  adding: DDPM/Celeb/x0_79.png (deflated 0%)
+  adding: DDPM/Celeb/x0_532.png (deflated 0%)
+  adding: DDPM/Celeb/x0_793.png (deflated 0%)
+  adding: DDPM/Celeb/x0_852.png (deflated 0%)
+  adding: DDPM/Celeb/x0_518.png (deflated 0%)
+  adding: DDPM/Celeb/x0_350.png (deflated 0%)
+  adding: DDPM/Celeb/x0_431.png (deflated 0%)
+  adding: DDPM/Celeb/x0_746.png (deflated 0%)
+  adding: DDPM/Celeb/x0_881.png (deflated 0%)
+  adding: DDPM/Celeb/x0_662.png (deflated 0%)
+  adding: DDPM/Celeb/x0_975.png (deflated 0%)
+  adding: DDPM/Celeb/x0_130.png (deflated 0%)
+  adding: DDPM/Celeb/x0_435.png (deflated 0%)
+  adding: DDPM/Celeb/x0_244.png (deflated 0%)
+  adding: DDPM/Celeb/x0_313.png (deflated 0%)
+  adding: DDPM/Celeb/x0_988.png (deflated 0%)
+  adding: DDPM/Celeb/x0_590.png (deflated 0%)
+  adding: DDPM/Celeb/x0_909.png (deflated 0%)
+  adding: DDPM/Celeb/x0_362.png (deflated 0%)
+  adding: DDPM/Celeb/x0_522.png (deflated 0%)
+  adding: DDPM/Celeb/x0_134.png (deflated 0%)
+  adding: DDPM/Celeb/x0_906.png (deflated 0%)
+  adding: DDPM/Celeb/x0_802.png (deflated 0%)
+  adding: DDPM/Celeb/x0_99.png (deflated 0%)
+  adding: DDPM/Celeb/x0_917.png (deflated 0%)
+  adding: DDPM/Celeb/x0_9.png (deflated 0%)
+  adding: DDPM/Celeb/x0_256.png (deflated 0%)
+  adding: DDPM/Celeb/x0_882.png (deflated 0%)
+  adding: DDPM/Celeb/x0_602.png (deflated 0%)
+  adding: DDPM/Celeb/x0_275.png (deflated 0%)
+  adding: DDPM/Celeb/x0_803.png (deflated 0%)
+  adding: DDPM/Celeb/x0_853.png (deflated 0%)
+  adding: DDPM/Celeb/x0_734.png (deflated 0%)
+  adding: DDPM/Celeb/x0_897.png (deflated 0%)
+  adding: DDPM/Celeb/x0_234.png (deflated 0%)
+  adding: DDPM/Celeb/x0_97.png (deflated 0%)
+  adding: DDPM/Celeb/x0_722.png (deflated 0%)
+  adding: DDPM/Celeb/x0_862.png (deflated 0%)
+  adding: DDPM/Celeb/x0_565.png (deflated 0%)
+  adding: DDPM/Celeb/x0_492.png (deflated 0%)
+  adding: DDPM/Celeb/x0_652.png (deflated 0%)
+  adding: DDPM/Celeb/x0_227.png (deflated 0%)
+  adding: DDPM/Celeb/x0_825.png (deflated 0%)
+  adding: DDPM/Celeb/x0_964.png (deflated 0%)
+  adding: DDPM/Celeb/x0_452.png (deflated 0%)
+  adding: DDPM/Celeb/x0_792.png (deflated 0%)
+  adding: DDPM/Celeb/x0_374.png (deflated 0%)
+  adding: DDPM/Celeb/x0_279.png (deflated 0%)
+  adding: DDPM/Celeb/x0_385.png (deflated 0%)
+  adding: DDPM/Celeb/x0_672.png (deflated 0%)
+  adding: DDPM/Celeb/x0_329.png (deflated 0%)
+  adding: DDPM/Celeb/x0_470.png (deflated 0%)
+  adding: DDPM/Celeb/x0_67.png (deflated 0%)
+  adding: DDPM/Celeb/x0_786.png (deflated 0%)
+  adding: DDPM/Celeb/x0_0.png (deflated 0%)
+  adding: DDPM/Celeb/x0_93.png (deflated 0%)
+  adding: DDPM/Celeb/x0_82.png (deflated 0%)
+  adding: DDPM/Celeb/x0_691.png (deflated 0%)
+  adding: DDPM/Celeb/x0_140.png (deflated 0%)
+  adding: DDPM/Celeb/x0_23.png (deflated 0%)
+  adding: DDPM/Celeb/x0_61.png (deflated 0%)
+  adding: DDPM/Celeb/x0_31.png (deflated 0%)
+  adding: DDPM/Celeb/x0_599.png (deflated 0%)
+  adding: DDPM/Celeb/x0_198.png (deflated 0%)
+  adding: DDPM/Celeb/x0_933.png (deflated 0%)
+  adding: DDPM/Celeb/x0_361.png (deflated 0%)
+  adding: DDPM/Celeb/x0_674.png (deflated 0%)
+  adding: DDPM/Celeb/x0_412.png (deflated 0%)
+  adding: DDPM/Celeb/x0_558.png (deflated 0%)
+  adding: DDPM/Celeb/x0_997.png (deflated 0%)
+  adding: DDPM/Celeb/x0_642.png (deflated 0%)
+  adding: DDPM/Celeb/x0_201.png (deflated 0%)
+  adding: DDPM/Celeb/x0_112.png (deflated 0%)
+  adding: DDPM/Celeb/x0_643.png (deflated 0%)
+  adding: DDPM/Celeb/x0_669.png (deflated 0%)
+  adding: DDPM/Celeb/x0_744.png (deflated 0%)
+  adding: DDPM/Celeb/x0_971.png (deflated 0%)
+  adding: DDPM/Celeb/x0_563.png (deflated 0%)
+  adding: DDPM/Celeb/x0_572.png (deflated 0%)
+  adding: DDPM/Celeb/x0_617.png (deflated 0%)
+  adding: DDPM/Celeb/x0_574.png (deflated 0%)
+  adding: DDPM/Celeb/x0_285.png (deflated 0%)
+  adding: DDPM/Celeb/x0_258.png (deflated 0%)
+  adding: DDPM/Celeb/x0_212.png (deflated 0%)
+  adding: DDPM/Celeb/x0_728.png (deflated 0%)
+  adding: DDPM/Celeb/x0_297.png (deflated 0%)
+  adding: DDPM/Celeb/x0_899.png (deflated 0%)
+  adding: DDPM/Celeb/x0_748.png (deflated 0%)
+  adding: DDPM/Celeb/x0_219.png (deflated 0%)
+  adding: DDPM/Celeb/x0_348.png (deflated 0%)
+  adding: DDPM/Celeb/x0_926.png (deflated 0%)
+  adding: DDPM/Celeb/x0_70.png (deflated 0%)
+  adding: DDPM/Celeb/x0_217.png (deflated 0%)
+  adding: DDPM/Celeb/x0_936.png (deflated 0%)
+  adding: DDPM/Celeb/x0_277.png (deflated 0%)
+  adding: DDPM/Celeb/x0_143.png (deflated 0%)
+  adding: DDPM/Celeb/x0_816.png (deflated 0%)
+  adding: DDPM/Celeb/x0_455.png (deflated 0%)
+  adding: DDPM/Celeb/x0_523.png (deflated 0%)
+  adding: DDPM/Celeb/x0_647.png (deflated 0%)
+  adding: DDPM/Celeb/x0_69.png (deflated 0%)
+  adding: DDPM/Celeb/x0_176.png (deflated 0%)
+  adding: DDPM/Celeb/x0_319.png (deflated 0%)
+  adding: DDPM/Celeb/x0_306.png (deflated 0%)
+  adding: DDPM/Celeb/x0_203.png (deflated 0%)
+  adding: DDPM/Celeb/x0_943.png (deflated 0%)
+  adding: DDPM/Celeb/x0_668.png (deflated 0%)
+  adding: DDPM/Celeb/x0_477.png (deflated 0%)
+  adding: DDPM/Celeb/x0_376.png (deflated 0%)
+  adding: DDPM/Celeb/x0_118.png (deflated 0%)
+  adding: DDPM/Celeb/x0_555.png (deflated 0%)
+  adding: DDPM/Celeb/x0_368.png (deflated 0%)
+  adding: DDPM/Celeb/x0_340.png (deflated 0%)
+  adding: DDPM/Celeb/x0_120.png (deflated 0%)
+  adding: DDPM/Celeb/x0_797.png (deflated 0%)
+  adding: DDPM/Celeb/x0_338.png (deflated 0%)
+  adding: DDPM/Celeb/x0_508.png (deflated 0%)
+  adding: DDPM/Celeb/x0_63.png (deflated 0%)
+  adding: DDPM/Celeb/x0_869.png (deflated 0%)
+  adding: DDPM/Celeb/x0_603.png (deflated 0%)
+  adding: DDPM/Celeb/x0_762.png (deflated 0%)
+  adding: DDPM/Celeb/x0_76.png (deflated 0%)
+  adding: DDPM/Celeb/x0_155.png (deflated 0%)
+  adding: DDPM/Celeb/x0_986.png (deflated 0%)
+  adding: DDPM/Celeb/x0_193.png (deflated 0%)
+  adding: DDPM/Celeb/x0_861.png (deflated 0%)
+  adding: DDPM/Celeb/x0_135.png (deflated 0%)
+  adding: DDPM/Celeb/x0_278.png (deflated 0%)
+  adding: DDPM/Celeb/x0_670.png (deflated 0%)
+  adding: DDPM/Celeb/x0_52.png (deflated 0%)
+  adding: DDPM/Celeb/x0_96.png (deflated 0%)
+  adding: DDPM/Celeb/x0_222.png (deflated 0%)
+  adding: DDPM/Celeb/x0_220.png (deflated 0%)
+  adding: DDPM/Celeb/x0_831.png (deflated 0%)
+  adding: DDPM/Celeb/x0_157.png (deflated 0%)
+  adding: DDPM/Celeb/x0_900.png (deflated 0%)
+  adding: DDPM/Celeb/x0_371.png (deflated 0%)
+  adding: DDPM/Celeb/x0_844.png (deflated 0%)
+  adding: DDPM/Celeb/x0_291.png (deflated 0%)
+  adding: DDPM/Celeb/x0_267.png (deflated 0%)
+  adding: DDPM/Celeb/x0_638.png (deflated 0%)
+  adding: DDPM/Celeb/x0_705.png (deflated 0%)
+  adding: DDPM/Celeb/x0_42.png (deflated 0%)
+  adding: DDPM/Celeb/x0_919.png (deflated 0%)
+  adding: DDPM/Celeb/x0_283.png (deflated 0%)
+  adding: DDPM/Celeb/x0_800.png (deflated 0%)
+  adding: DDPM/Celeb/x0_991.png (deflated 0%)
+  adding: DDPM/Celeb/x0_973.png (deflated 0%)
+  adding: DDPM/Celeb/x0_451.png (deflated 0%)
+  adding: DDPM/Celeb/x0_22.png (deflated 0%)
+  adding: DDPM/Celeb/x0_393.png (deflated 0%)
+  adding: DDPM/Celeb/x0_864.png (deflated 0%)
+  adding: DDPM/Celeb/x0_784.png (deflated 0%)
+  adding: DDPM/Celeb/x0_239.png (deflated 0%)
+  adding: DDPM/Celeb/x0_284.png (deflated 0%)
+  adding: DDPM/Celeb/x0_447.png (deflated 0%)
+  adding: DDPM/Celeb/x0_485.png (deflated 0%)
+  adding: DDPM/Celeb/x0_855.png (deflated 0%)
+  adding: DDPM/Celeb/x0_427.png (deflated 0%)
+  adding: DDPM/Celeb/x0_473.png (deflated 0%)
+  adding: DDPM/Celeb/x0_105.png (deflated 0%)
+  adding: DDPM/Celeb/x0_667.png (deflated 0%)
+  adding: DDPM/Celeb/x0_355.png (deflated 0%)
+  adding: DDPM/Celeb/x0_596.png (deflated 0%)
+  adding: DDPM/Celeb/x0_299.png (deflated 0%)
+  adding: DDPM/Celeb/x0_981.png (deflated 0%)
+  adding: DDPM/Celeb/x0_391.png (deflated 0%)
+  adding: DDPM/Celeb/x0_453.png (deflated 0%)
+  adding: DDPM/Celeb/x0_775.png (deflated 0%)
+  adding: DDPM/Celeb/x0_180.png (deflated 0%)
+  adding: DDPM/Celeb/x0_20.png (deflated 0%)
+  adding: DDPM/Celeb/x0_620.png (deflated 0%)
+  adding: DDPM/Celeb/x0_621.png (deflated 0%)
+  adding: DDPM/Celeb/x0_410.png (deflated 0%)
+  adding: DDPM/Celeb/x0_72.png (deflated 0%)
+  adding: DDPM/Celeb/x0_424.png (deflated 0%)
+  adding: DDPM/Celeb/x0_28.png (deflated 0%)
+  adding: DDPM/Celeb/x0_529.png (deflated 0%)
+  adding: DDPM/Celeb/x0_434.png (deflated 0%)
+  adding: DDPM/Celeb/x0_673.png (deflated 0%)
+  adding: DDPM/Celeb/x0_767.png (deflated 0%)
+  adding: DDPM/Celeb/x0_396.png (deflated 0%)
+  adding: DDPM/Celeb/x0_156.png (deflated 0%)
+  adding: DDPM/Celeb/x0_575.png (deflated 0%)
+  adding: DDPM/Celeb/x0_390.png (deflated 0%)
+  adding: DDPM/Celeb/x0_976.png (deflated 0%)
+  adding: DDPM/Celeb/x0_426.png (deflated 0%)
+  adding: DDPM/Celeb/x0_719.png (deflated 0%)
+  adding: DDPM/Celeb/x0_288.png (deflated 0%)
+  adding: DDPM/Celeb/x0_937.png (deflated 0%)
+  adding: DDPM/Celeb/x0_161.png (deflated 0%)
+  adding: DDPM/Celeb/x0_296.png (deflated 0%)
+  adding: DDPM/Celeb/x0_302.png (deflated 0%)
+  adding: DDPM/Celeb/x0_534.png (deflated 0%)
+  adding: DDPM/Celeb/x0_808.png (deflated 0%)
+  adding: DDPM/Celeb/x0_640.png (deflated 0%)
+  adding: DDPM/Celeb/x0_246.png (deflated 0%)
+  adding: DDPM/Celeb/x0_194.png (deflated 0%)
+  adding: DDPM/Celeb/x0_676.png (deflated 0%)
+  adding: DDPM/Celeb/x0_248.png (deflated 0%)
+  adding: DDPM/Celeb/x0_226.png (deflated 0%)
+  adding: DDPM/Celeb/x0_872.png (deflated 0%)
+  adding: DDPM/Celeb/x0_218.png (deflated 0%)
+  adding: DDPM/Celeb/x0_121.png (deflated 0%)
+  adding: DDPM/Celeb/x0_13.png (deflated 0%)
+  adding: DDPM/Celeb/x0_422.png (deflated 0%)
+  adding: DDPM/Celeb/x0_830.png (deflated 0%)
+  adding: DDPM/Celeb/x0_263.png (deflated 0%)
+  adding: DDPM/Celeb/x0_484.png (deflated 0%)
+  adding: DDPM/Celeb/x0_664.png (deflated 0%)
+  adding: DDPM/Celeb/x0_413.png (deflated 0%)
+  adding: DDPM/Celeb/x0_732.png (deflated 0%)
+  adding: DDPM/Celeb/x0_328.png (deflated 0%)
+  adding: DDPM/Celeb/x0_552.png (deflated 0%)
+  adding: DDPM/Celeb/x0_962.png (deflated 0%)
+  adding: DDPM/Celeb/x0_345.png (deflated 0%)
+  adding: DDPM/Celeb/x0_168.png (deflated 0%)
+  adding: DDPM/Celeb/x0_92.png (deflated 0%)
+  adding: DDPM/Celeb/x0_83.png (deflated 0%)
+  adding: DDPM/Celeb/x0_252.png (deflated 0%)
+  adding: DDPM/Celeb/x0_245.png (deflated 0%)
+  adding: DDPM/Celeb/x0_989.png (deflated 0%)
+  adding: DDPM/Celeb/x0_88.png (deflated 0%)
+  adding: DDPM/Celeb/x0_610.png (deflated 0%)
+  adding: DDPM/Celeb/x0_820.png (deflated 0%)
+  adding: DDPM/Celeb/x0_928.png (deflated 0%)
+  adding: DDPM/Celeb/x0_700.png (deflated 0%)
+  adding: DDPM/Celeb/x0_294.png (deflated 0%)
+  adding: DDPM/Celeb/x0_606.png (deflated 0%)
+  adding: DDPM/Celeb/x0_923.png (deflated 0%)
+  adding: DDPM/Celeb/x0_639.png (deflated 0%)
+  adding: DDPM/Celeb/x0_804.png (deflated 0%)
+  adding: DDPM/Celeb/x0_686.png (deflated 0%)
+  adding: DDPM/Celeb/x0_689.png (deflated 0%)
+  adding: DDPM/Celeb/x0_356.png (deflated 0%)
+  adding: DDPM/Celeb/x0_998.png (deflated 0%)
+  adding: DDPM/Celeb/x0_715.png (deflated 0%)
+  adding: DDPM/Celeb/x0_956.png (deflated 0%)
+  adding: DDPM/Celeb/x0_64.png (deflated 0%)
+  adding: DDPM/Celeb/x0_860.png (deflated 0%)
+  adding: DDPM/Celeb/x0_774.png (deflated 0%)
+  adding: DDPM/Celeb/x0_751.png (deflated 0%)
+  adding: DDPM/Celeb/x0_684.png (deflated 0%)
+  adding: DDPM/Celeb/x0_326.png (deflated 0%)
+  adding: DDPM/Celeb/x0_487.png (deflated 0%)
+  adding: DDPM/Celeb/x0_190.png (deflated 0%)
+  adding: DDPM/Celeb/x0_404.png (deflated 0%)
+  adding: DDPM/Celeb/x0_631.png (deflated 0%)
+  adding: DDPM/Celeb/x0_559.png (deflated 0%)
+  adding: DDPM/Celeb/x0_578.png (deflated 0%)
+  adding: DDPM/Celeb/x0_478.png (deflated 0%)
+  adding: DDPM/Celeb/x0_693.png (deflated 0%)
+  adding: DDPM/Celeb/x0_450.png (deflated 0%)
+  adding: DDPM/Celeb/x0_688.png (deflated 0%)
+  adding: DDPM/Celeb/x0_907.png (deflated 0%)
+  adding: DDPM/Celeb/x0_80.png (deflated 0%)
+  adding: DDPM/Celeb/x0_261.png (deflated 0%)
+  adding: DDPM/Celeb/x0_47.png (deflated 0%)
+  adding: DDPM/Celeb/x0_612.png (deflated 0%)
+  adding: DDPM/Celeb/x0_337.png (deflated 0%)
+  adding: DDPM/Celeb/x0_892.png (deflated 0%)
+  adding: DDPM/Celeb/x0_911.png (deflated 0%)
+  adding: DDPM/Celeb/x0_62.png (deflated 0%)
+  adding: DDPM/Celeb/x0_497.png (deflated 0%)
+  adding: DDPM/Celeb/x0_805.png (deflated 0%)
+  adding: DDPM/Celeb/x0_760.png (deflated 0%)
+  adding: DDPM/Celeb/x0_651.png (deflated 0%)
+  adding: DDPM/Celeb/x0_181.png (deflated 0%)
+  adding: DDPM/Celeb/x0_370.png (deflated 0%)
+  adding: DDPM/Celeb/x0_408.png (deflated 0%)
+  adding: DDPM/Celeb/x0_742.png (deflated 0%)
+  adding: DDPM/Celeb/x0_941.png (deflated 0%)
+  adding: DDPM/Celeb/x0_494.png (deflated 0%)
+  adding: DDPM/Celeb/x0_471.png (deflated 0%)
+  adding: DDPM/Celeb/x0_381.png (deflated 0%)
+  adding: DDPM/Celeb/x0_301.png (deflated 0%)
+  adding: DDPM/Celeb/x0_465.png (deflated 0%)
+  adding: DDPM/Celeb/x0_145.png (deflated 0%)
+  adding: DDPM/Celeb/x0_959.png (deflated 0%)
+  adding: DDPM/Celeb/x0_253.png (deflated 0%)
+  adding: DDPM/Celeb/x0_324.png (deflated 0%)
+  adding: DDPM/Celeb/x0_271.png (deflated 0%)
+  adding: DDPM/Celeb/x0_272.png (deflated 0%)
+  adding: DDPM/Celeb/x0_951.png (deflated 0%)
+  adding: DDPM/Celeb/x0_666.png (deflated 0%)
+  adding: DDPM/Celeb/x0_438.png (deflated 0%)
+  adding: DDPM/Celeb/x0_955.png (deflated 0%)
+  adding: DDPM/Celeb/x0_678.png (deflated 0%)
+  adding: DDPM/Celeb/x0_249.png (deflated 0%)
+  adding: DDPM/Celeb/x0_720.png (deflated 0%)
+  adding: DDPM/Celeb/x0_137.png (deflated 0%)
+  adding: DDPM/Celeb/x0_993.png (deflated 0%)
+  adding: DDPM/Celeb/x0_148.png (deflated 0%)
+  adding: DDPM/Celeb/x0_25.png (deflated 0%)
+  adding: DDPM/Celeb/x0_224.png (deflated 0%)
+  adding: DDPM/Celeb/x0_229.png (deflated 0%)
+  adding: DDPM/Celeb/x0_661.png (deflated 0%)
+  adding: DDPM/Celeb/x0_60.png (deflated 0%)
+  adding: DDPM/Celeb/x0_149.png (deflated 0%)
+  adding: DDPM/Celeb/x0_74.png (deflated 0%)
+  adding: DDPM/Celeb/x0_238.png (deflated 0%)
+  adding: DDPM/Celeb/x0_209.png (deflated 0%)
+  adding: DDPM/Celeb/x0_481.png (deflated 0%)
+  adding: DDPM/Celeb/x0_583.png (deflated 0%)
+  adding: DDPM/Celeb/x0_543.png (deflated 0%)
+  adding: DDPM/Celeb/x0_913.png (deflated 0%)
+  adding: DDPM/Celeb/x0_840.png (deflated 0%)
+  adding: DDPM/Celeb/x0_166.png (deflated 0%)
+  adding: DDPM/Celeb/x0_208.png (deflated 0%)
+  adding: DDPM/Celeb/x0_428.png (deflated 0%)
+  adding: DDPM/Celeb/x0_57.png (deflated 0%)
+  adding: DDPM/Celeb/x0_379.png (deflated 0%)
+  adding: DDPM/Celeb/x0_472.png (deflated 0%)
+  adding: DDPM/Celeb/x0_817.png (deflated 0%)
+  adding: DDPM/Celeb/x0_503.png (deflated 0%)
+  adding: DDPM/Celeb/x0_859.png (deflated 0%)
+  adding: DDPM/Celeb/x0_611.png (deflated 0%)
+  adding: DDPM/Celeb/x0_871.png (deflated 0%)
+  adding: DDPM/Celeb/x0_636.png (deflated 0%)
+  adding: DDPM/Celeb/x0_429.png (deflated 0%)
+  adding: DDPM/Celeb/x0_740.png (deflated 0%)
+  adding: DDPM/Celeb/x0_585.png (deflated 0%)
+  adding: DDPM/Celeb/x0_968.png (deflated 0%)
+  adding: DDPM/Celeb/x0_847.png (deflated 0%)
+  adding: DDPM/Celeb/x0_726.png (deflated 0%)
+  adding: DDPM/Celeb/x0_133.png (deflated 0%)
+  adding: DDPM/Celeb/x0_242.png (deflated 0%)
+  adding: DDPM/Celeb/x0_339.png (deflated 0%)
+  adding: DDPM/Celeb/x0_591.png (deflated 0%)
+  adding: DDPM/Celeb/x0_363.png (deflated 0%)
+  adding: DDPM/Celeb/x0_49.png (deflated 0%)
+  adding: DDPM/Celeb/x0_566.png (deflated 0%)
+  adding: DDPM/Celeb/x0_798.png (deflated 0%)
+  adding: DDPM/Celeb/x0_458.png (deflated 0%)
+  adding: DDPM/Celeb/x0_535.png (deflated 0%)
+  adding: DDPM/Celeb/x0_48.png (deflated 0%)
+  adding: DDPM/Celeb/x0_200.png (deflated 0%)
+  adding: DDPM/Celeb/x0_890.png (deflated 0%)
+  adding: DDPM/Celeb/x0_706.png (deflated 0%)
+  adding: DDPM/Celeb/x0_695.png (deflated 0%)
+  adding: DDPM/Celeb/x0_945.png (deflated 0%)
+  adding: DDPM/Celeb/x0_459.png (deflated 0%)
+  adding: DDPM/Celeb/x0_785.png (deflated 0%)
+  adding: DDPM/Celeb/x0_138.png (deflated 0%)
+  adding: DDPM/Celeb/x0_958.png (deflated 0%)
+  adding: DDPM/Celeb/x0_146.png (deflated 0%)
+  adding: DDPM/Celeb/x0_114.png (deflated 0%)
+  adding: DDPM/Celeb/x0_335.png (deflated 0%)
+  adding: DDPM/Celeb/x0_814.png (deflated 0%)
+  adding: DDPM/Celeb/x0_918.png (deflated 0%)
+  adding: DDPM/Celeb/x0_367.png (deflated 0%)
+  adding: DDPM/Celeb/x0_679.png (deflated 0%)
+  adding: DDPM/Celeb/x0_533.png (deflated 0%)
+  adding: DDPM/Celeb/x0_755.png (deflated 0%)
+  adding: DDPM/Celeb/x0_10.png (deflated 0%)
+  adding: DDPM/Celeb/x0_305.png (deflated 0%)
+  adding: DDPM/Celeb/x0_921.png (deflated 0%)
+  adding: DDPM/Celeb/x0_747.png (deflated 0%)
+  adding: DDPM/Celeb/x0_938.png (deflated 0%)
+  adding: DDPM/Celeb/x0_865.png (deflated 0%)
+  adding: DDPM/Celeb/x0_966.png (deflated 0%)
+  adding: DDPM/Celeb/x0_415.png (deflated 0%)
+  adding: DDPM/Celeb/x0_521.png (deflated 0%)
+  adding: DDPM/Celeb/x0_310.png (deflated 0%)
+  adding: DDPM/Celeb/x0_257.png (deflated 0%)
+  adding: DDPM/Celeb/x0_660.png (deflated 0%)
+  adding: DDPM/Celeb/x0_648.png (deflated 0%)
+  adding: DDPM/Celeb/x0_462.png (deflated 0%)
+  adding: DDPM/Celeb/x0_778.png (deflated 0%)
+  adding: DDPM/Celeb/x0_832.png (deflated 0%)
+  adding: DDPM/Celeb/x0_312.png (deflated 0%)
+  adding: DDPM/Celeb/x0_448.png (deflated 0%)
+  adding: DDPM/Celeb/x0_17.png (deflated 0%)
+  adding: DDPM/Celeb/x0_357.png (deflated 0%)
+  adding: DDPM/Celeb/x0_843.png (deflated 0%)
+  adding: DDPM/Celeb/x0_436.png (deflated 0%)
+  adding: DDPM/Celeb/x0_55.png (deflated 0%)
+  adding: DDPM/Celeb/x0_46.png (deflated 0%)
+  adding: DDPM/Celeb/x0_111.png (deflated 0%)
+  adding: DDPM/Celeb/x0_233.png (deflated 0%)
+  adding: DDPM/Celeb/x0_178.png (deflated 0%)
+  adding: DDPM/Celeb/x0_191.png (deflated 0%)
+  adding: DDPM/Celeb/x0_823.png (deflated 0%)
+  adding: DDPM/Celeb/x0_154.png (deflated 0%)
+  adding: DDPM/Celeb/x0_554.png (deflated 0%)
+  adding: DDPM/Celeb/x0_411.png (deflated 0%)
+  adding: DDPM/Celeb/x0_213.png (deflated 0%)
+  adding: DDPM/Celeb/x0_984.png (deflated 0%)
+  adding: DDPM/Celeb/x0_791.png (deflated 0%)
+  adding: DDPM/Celeb/x0_91.png (deflated 0%)
+  adding: DDPM/Celeb/x0_567.png (deflated 0%)
+  adding: DDPM/Celeb/x0_115.png (deflated 0%)
+  adding: DDPM/Celeb/x0_870.png (deflated 0%)
+  adding: DDPM/Celeb/x0_570.png (deflated 0%)
+  adding: DDPM/Celeb/x0_619.png (deflated 0%)
+  adding: DDPM/Celeb/x0_593.png (deflated 0%)
+  adding: DDPM/Celeb/x0_456.png (deflated 0%)
+  adding: DDPM/Celeb/x0_813.png (deflated 0%)
+  adding: DDPM/Celeb/x0_681.png (deflated 0%)
+  adding: DDPM/Celeb/x0_490.png (deflated 0%)
+  adding: DDPM/Celeb/x0_954.png (deflated 0%)
+  adding: DDPM/Celeb/x0_632.png (deflated 0%)
+  adding: DDPM/Celeb/x0_708.png (deflated 0%)
+  adding: DDPM/Celeb/x0_65.png (deflated 0%)
+  adding: DDPM/Celeb/x0_45.png (deflated 0%)
+  adding: DDPM/Celeb/x0_659.png (deflated 0%)
+  adding: DDPM/Celeb/x0_579.png (deflated 0%)
+  adding: DDPM/Celeb/x0_790.png (deflated 0%)
+  adding: DDPM/Celeb/x0_879.png (deflated 0%)
+  adding: DDPM/Celeb/x0_910.png (deflated 0%)
+  adding: DDPM/Celeb/x0_789.png (deflated 0%)
+  adding: DDPM/Celeb/x0_295.png (deflated 0%)
+  adding: DDPM/Celeb/x0_489.png (deflated 0%)
+  adding: DDPM/Celeb/x0_351.png (deflated 0%)
+  adding: DDPM/Celeb/x0_84.png (deflated 0%)
+  adding: DDPM/Celeb/x0_608.png (deflated 0%)
+  adding: DDPM/Celeb/x0_927.png (deflated 0%)
+  adding: DDPM/Celeb/x0_308.png (deflated 0%)
+  adding: DDPM/Celeb/x0_571.png (deflated 0%)
+  adding: DDPM/Celeb/x0_39.png (deflated 0%)
+  adding: DDPM/Celeb/x0_788.png (deflated 0%)
+  adding: DDPM/Celeb/x0_287.png (deflated 0%)
+  adding: DDPM/Celeb/x0_858.png (deflated 0%)
+  adding: DDPM/Celeb/x0_781.png (deflated 0%)
+  adding: DDPM/Celeb/x0_71.png (deflated 0%)
+  adding: DDPM/Celeb/x0_262.png (deflated 0%)
+  adding: DDPM/Celeb/x0_888.png (deflated 0%)
+  adding: DDPM/Celeb/x0_330.png (deflated 0%)
+  adding: DDPM/Celeb/x0_398.png (deflated 0%)
+  adding: DDPM/Celeb/x0_103.png (deflated 0%)
+  adding: DDPM/Celeb/x0_546.png (deflated 0%)
+  adding: DDPM/Celeb/x0_50.png (deflated 0%)
+  adding: DDPM/Celeb/x0_87.png (deflated 0%)
+  adding: DDPM/Celeb/x0_334.png (deflated 0%)
+  adding: DDPM/Celeb/x0_889.png (deflated 0%)
+  adding: DDPM/Celeb/x0_196.png (deflated 0%)
+  adding: DDPM/Celeb/x0_687.png (deflated 0%)
+  adding: DDPM/Celeb/x0_511.png (deflated 0%)
+  adding: DDPM/Celeb/x0_818.png (deflated 0%)
+  adding: DDPM/Celeb/x0_175.png (deflated 0%)
+  adding: DDPM/Celeb/x0_733.png (deflated 0%)
+  adding: DDPM/Celeb/x0_174.png (deflated 0%)
+  adding: DDPM/Celeb/x0_833.png (deflated 0%)
+  adding: DDPM/Celeb/x0_967.png (deflated 0%)
+  adding: DDPM/Celeb/x0_685.png (deflated 0%)
+  adding: DDPM/Celeb/x0_799.png (deflated 0%)
+  adding: DDPM/Celeb/x0_628.png (deflated 0%)
+  adding: DDPM/Celeb/x0_236.png (deflated 0%)
+  adding: DDPM/Celeb/x0_197.png (deflated 0%)
+  adding: DDPM/Celeb/x0_947.png (deflated 0%)
+  adding: DDPM/Celeb/x0_930.png (deflated 0%)
+  adding: DDPM/Celeb/x0_375.png (deflated 0%)
+  adding: DDPM/Celeb/x0_999.png (deflated 0%)
+  adding: DDPM/Celeb/x0_128.png (deflated 0%)
+  adding: DDPM/Celeb/x0_504.png (deflated 0%)
+  adding: DDPM/Celeb/x0_983.png (deflated 0%)
+  adding: DDPM/Celeb/x0_615.png (deflated 0%)
+  adding: DDPM/Celeb/x0_53.png (deflated 0%)
+  adding: DDPM/Celeb/x0_475.png (deflated 0%)
+  adding: DDPM/Celeb/x0_948.png (deflated 0%)
+  adding: DDPM/Celeb/x0_540.png (deflated 0%)
+  adding: DDPM/Celeb/x0_856.png (deflated 0%)
+  adding: DDPM/Celeb/x0_520.png (deflated 0%)
+  adding: DDPM/Celeb/x0_228.png (deflated 0%)
+  adding: DDPM/Celeb/x0_386.png (deflated 0%)
+  adding: DDPM/Celeb/x0_264.png (deflated 0%)
+  adding: DDPM/Celeb/x0_626.png (deflated 0%)
+  adding: DDPM/Celeb/x0_117.png (deflated 0%)
+  adding: DDPM/Celeb/x0_753.png (deflated 0%)
+  adding: DDPM/Celeb/x0_204.png (deflated 0%)
+  adding: DDPM/Celeb/x0_289.png (deflated 0%)
+  adding: DDPM/Celeb/x0_944.png (deflated 0%)
+  adding: DDPM/Celeb/x0_100.png (deflated 0%)
+  adding: DDPM/Celeb/x0_51.png (deflated 0%)
+  adding: DDPM/Celeb/x0_965.png (deflated 0%)
+  adding: DDPM/Celeb/x0_924.png (deflated 0%)
+  adding: DDPM/Celeb/x0_682.png (deflated 0%)
+  adding: DDPM/Celeb/x0_255.png (deflated 0%)
+  adding: DDPM/Celeb/x0_188.png (deflated 0%)
+  adding: DDPM/Celeb/x0_388.png (deflated 0%)
+  adding: DDPM/Celeb/x0_206.png (deflated 0%)
+  adding: DDPM/Celeb/x0_44.png (deflated 0%)
+  adding: DDPM/Celeb/x0_952.png (deflated 0%)
+  adding: DDPM/Celeb/x0_905.png (deflated 0%)
+  adding: DDPM/Celeb/x0_776.png (deflated 0%)
+  adding: DDPM/Celeb/x0_553.png (deflated 0%)
+  adding: DDPM/Celeb/x0_482.png (deflated 0%)
+  adding: DDPM/Celeb/x0_885.png (deflated 0%)
+  adding: DDPM/Celeb/x0_333.png (deflated 0%)
+  adding: DDPM/Celeb/x0_514.png (deflated 0%)
+  adding: DDPM/Celeb/x0_430.png (deflated 0%)
+  adding: DDPM/Celeb/x0_902.png (deflated 0%)
+  adding: DDPM/Celeb/x0_479.png (deflated 0%)
+  adding: DDPM/Celeb/x0_834.png (deflated 0%)
+  adding: DDPM/Celeb/x0_985.png (deflated 0%)
+  adding: DDPM/Celeb/x0_739.png (deflated 0%)
+  adding: DDPM/Celeb/x0_665.png (deflated 0%)
+  adding: DDPM/Celeb/x0_19.png (deflated 0%)
+  adding: DDPM/Celeb/x0_445.png (deflated 0%)
+  adding: DDPM/Celeb/x0_73.png (deflated 0%)
+  adding: DDPM/Celeb/x0_812.png (deflated 0%)
+  adding: DDPM/Celeb/x0_290.png (deflated 0%)
+  adding: DDPM/Celeb/x0_325.png (deflated 0%)
+  adding: DDPM/Celeb/x0_963.png (deflated 0%)
+  adding: DDPM/Celeb/x0_735.png (deflated 0%)
+  adding: DDPM/Celeb/x0_127.png (deflated 0%)
+  adding: DDPM/Celeb/x0_331.png (deflated 0%)
+  adding: DDPM/Celeb/x0_624.png (deflated 0%)
+  adding: DDPM/Celeb/x0_160.png (deflated 0%)
+  adding: DDPM/Celeb/x0_627.png (deflated 0%)
+  adding: DDPM/Celeb/x0_644.png (deflated 0%)
+  adding: DDPM/Celeb/x0_737.png (deflated 0%)
+  adding: DDPM/Celeb/x0_531.png (deflated 0%)
+  adding: DDPM/Celeb/x0_466.png (deflated 0%)
+  adding: DDPM/Celeb/x0_210.png (deflated 0%)
+  adding: DDPM/Celeb/x0_159.png (deflated 0%)
+  adding: DDPM/Celeb/x0_192.png (deflated 0%)
+  adding: DDPM/Celeb/x0_837.png (deflated 0%)
+  adding: DDPM/Celeb/x0_24.png (deflated 0%)
+  adding: DDPM/Celeb/x0_807.png (deflated 0%)
+  adding: DDPM/Celeb/x0_970.png (deflated 0%)
+  adding: DDPM/Celeb/x0_738.png (deflated 0%)
+  adding: DDPM/Celeb/x0_538.png (deflated 0%)
+  adding: DDPM/Celeb/x0_908.png (deflated 0%)
+  adding: DDPM/Celeb/x0_867.png (deflated 0%)
+  adding: DDPM/Celeb/x0_457.png (deflated 0%)
+  adding: DDPM/Celeb/x0_1.png (deflated 0%)
+  adding: DDPM/Celeb/x0_783.png (deflated 0%)
+  adding: DDPM/Celeb/x0_915.png (deflated 0%)
+  adding: DDPM/Celeb/x0_309.png (deflated 0%)
+  adding: DDPM/Celeb/x0_874.png (deflated 0%)
+  adding: DDPM/Celeb/x0_903.png (deflated 0%)
+  adding: DDPM/Celeb/x0_186.png (deflated 0%)
+  adding: DDPM/Celeb/x0_727.png (deflated 0%)
+  adding: DDPM/Celeb/x0_810.png (deflated 0%)
+  adding: DDPM/Celeb/x0_780.png (deflated 0%)
+  adding: DDPM/Celeb/x0_990.png (deflated 0%)
+  adding: DDPM/Celeb/x0_467.png (deflated 0%)
+  adding: DDPM/Celeb/x0_850.png (deflated 0%)
+  adding: DDPM/Celeb/x0_383.png (deflated 0%)
+  adding: DDPM/Celeb/x0_893.png (deflated 0%)
+  adding: DDPM/Celeb/x0_235.png (deflated 0%)
+  adding: DDPM/Celeb/x0_960.png (deflated 0%)
+  adding: DDPM/Celeb/x0_811.png (deflated 0%)
+  adding: DDPM/Celeb/x0_332.png (deflated 0%)
+  adding: DDPM/Celeb/x0_21.png (deflated 0%)
+  adding: DDPM/Celeb/x0_616.png (deflated 0%)
+  adding: DDPM/Celeb/x0_162.png (deflated 0%)
+  adding: DDPM/Celeb/x0_629.png (deflated 0%)
+  adding: DDPM/Celeb/x0_33.png (deflated 0%)
+  adding: DDPM/Celeb/x0_557.png (deflated 0%)
+  adding: DDPM/Celeb/x0_761.png (deflated 0%)
+  adding: DDPM/Celeb/x0_568.png (deflated 0%)
+  adding: DDPM/Celeb/x0_402.png (deflated 0%)
+  adding: DDPM/Celeb/x0_697.png (deflated 0%)
+  adding: DDPM/Celeb/x0_654.png (deflated 0%)
+  adding: DDPM/Celeb/x0_446.png (deflated 0%)
+  adding: DDPM/Celeb/x0_109.png (deflated 0%)
+  adding: DDPM/Celeb/x0_343.png (deflated 0%)
+  adding: DDPM/Celeb/x0_609.png (deflated 0%)
+  adding: DDPM/Celeb/x0_835.png (deflated 0%)
+  adding: DDPM/Celeb/x0_950.png (deflated 0%)
+  adding: DDPM/Celeb/x0_772.png (deflated 0%)
+  adding: DDPM/Celeb/x0_141.png (deflated 0%)
+  adding: DDPM/Celeb/x0_384.png (deflated 0%)
+  adding: DDPM/Celeb/x0_378.png (deflated 0%)
+  adding: DDPM/Celeb/x0_541.png (deflated 0%)
+  adding: DDPM/Celeb/x0_868.png (deflated 0%)
+  adding: DDPM/Celeb/x0_946.png (deflated 0%)
+  adding: DDPM/Celeb/x0_519.png (deflated 0%)
+  adding: DDPM/Celeb/x0_129.png (deflated 0%)
+  adding: DDPM/Celeb/x0_303.png (deflated 0%)
+  adding: DDPM/Celeb/x0_721.png (deflated 0%)
+  adding: DDPM/Celeb/x0_863.png (deflated 0%)
+  adding: DDPM/Celeb/x0_707.png (deflated 0%)
+  adding: DDPM/Celeb/x0_122.png (deflated 0%)
+  adding: DDPM/Celeb/x0_89.png (deflated 0%)
+  adding: DDPM/Celeb/x0_866.png (deflated 0%)
+  adding: DDPM/Celeb/x0_580.png (deflated 0%)
+  adding: DDPM/Celeb/x0_56.png (deflated 0%)
+  adding: DDPM/Celeb/x0_486.png (deflated 0%)
+  adding: DDPM/Celeb/x0_949.png (deflated 0%)
+  adding: DDPM/Celeb/x0_657.png (deflated 0%)
+  adding: DDPM/Celeb/x0_315.png (deflated 0%)
+  adding: DDPM/Celeb/x0_680.png (deflated 0%)
+  adding: DDPM/Celeb/x0_163.png (deflated 0%)
+  adding: DDPM/Celeb/x0_527.png (deflated 0%)
+  adding: DDPM/Celeb/x0_394.png (deflated 0%)
+  adding: DDPM/Celeb/x0_36.png (deflated 0%)
+  adding: DDPM/Celeb/x0_425.png (deflated 0%)
+  adding: DDPM/Celeb/x0_622.png (deflated 0%)
+  adding: DDPM/Celeb/x0_904.png (deflated 0%)
+  adding: DDPM/Celeb/x0_854.png (deflated 0%)
+  adding: DDPM/Celeb/x0_304.png (deflated 0%)
+  adding: DDPM/Celeb/x0_595.png (deflated 0%)
+  adding: DDPM/Celeb/x0_29.png (deflated 0%)
+  adding: DDPM/Celeb/x0_250.png (deflated 0%)
+  adding: DDPM/Celeb/x0_939.png (deflated 0%)
+  adding: DDPM/Celeb/x0_15.png (deflated 0%)
+  adding: DDPM/Celeb/x0_377.png (deflated 0%)
+  adding: DDPM/Celeb/x0_887.png (deflated 0%)
+  adding: DDPM/Celeb/x0_725.png (deflated 0%)
+  adding: DDPM/Celeb/x0_822.png (deflated 0%)
+  adding: DDPM/Celeb/x0_274.png (deflated 0%)
+  adding: DDPM/Celeb/x0_342.png (deflated 0%)
+  adding: DDPM/Celeb/x0_773.png (deflated 0%)
+  adding: DDPM/Celeb/x0_845.png (deflated 0%)
+  adding: DDPM/Celeb/x0_463.png (deflated 0%)
+  adding: DDPM/Celeb/x0_920.png (deflated 0%)
+  adding: DDPM/Celeb/x0_158.png (deflated 0%)
+  adding: DDPM/Celeb/x0_221.png (deflated 0%)
+  adding: DDPM/Celeb/x0_78.png (deflated 0%)
+  adding: DDPM/Celeb/x0_690.png (deflated 0%)
+  adding: DDPM/Celeb/x0_399.png (deflated 0%)
+  adding: DDPM/Celeb/x0_509.png (deflated 0%)
+  adding: DDPM/Celeb/x0_607.png (deflated 0%)
+  adding: DDPM/Celeb/x0_270.png (deflated 0%)
+  adding: DDPM/Celeb/x0_714.png (deflated 0%)
+  adding: DDPM/Celeb/x0_205.png (deflated 0%)
+  adding: DDPM/Celeb/x0_152.png (deflated 0%)
+  adding: DDPM/Celeb/x0_764.png (deflated 0%)
+  adding: DDPM/Celeb/x0_507.png (deflated 0%)
+  adding: DDPM/Celeb/x0_433.png (deflated 0%)
+  adding: DDPM/Celeb/x0_517.png (deflated 0%)
+  adding: DDPM/Celeb/x0_223.png (deflated 0%)
+  adding: DDPM/Celeb/x0_34.png (deflated 0%)
+  adding: DDPM/Celeb/x0_247.png (deflated 0%)
+  adding: DDPM/Celeb/x0_794.png (deflated 0%)
+  adding: DDPM/Celeb/x0_957.png (deflated 0%)
+  adding: DDPM/Celeb/x0_801.png (deflated 0%)
+  adding: DDPM/Celeb/x0_420.png (deflated 0%)
+  adding: DDPM/Celeb/x0_320.png (deflated 0%)
+  adding: DDPM/Celeb/x0_581.png (deflated 0%)
+  adding: DDPM/Celeb/x0_360.png (deflated 0%)
+  adding: DDPM/Celeb/x0_150.png (deflated 0%)
+  adding: DDPM/Celeb/x0_443.png (deflated 0%)
+  adding: DDPM/Celeb/x0_293.png (deflated 0%)
+  adding: DDPM/Celeb/x0_8.png (deflated 0%)
+  adding: DDPM/Celeb/x0_694.png (deflated 0%)
+  adding: DDPM/Celeb/x0_826.png (deflated 0%)
+  adding: DDPM/Celeb/x0_929.png (deflated 0%)
+  adding: DDPM/Celeb/x0_58.png (deflated 0%)
+  adding: DDPM/Celeb/x0_259.png (deflated 0%)
+  adding: DDPM/Celeb/x0_437.png (deflated 0%)
+  adding: DDPM/Celeb/x0_819.png (deflated 0%)
+  adding: DDPM/Celeb/x0_132.png (deflated 0%)
+  adding: DDPM/Celeb/x0_151.png (deflated 0%)
+  adding: DDPM/Celeb/x0_131.png (deflated 0%)
+  adding: DDPM/Celeb/x0_754.png (deflated 0%)
+  adding: DDPM/Celeb/x0_782.png (deflated 0%)
+  adding: DDPM/Celeb/x0_116.png (deflated 0%)
+  adding: DDPM/Celeb/x0_884.png (deflated 0%)
+  adding: DDPM/Celeb/x0_495.png (deflated 0%)
+  adding: DDPM/Celeb/x0_623.png (deflated 0%)
+  adding: DDPM/Celeb/x0_365.png (deflated 0%)
+  adding: DDPM/Celeb/x0_280.png (deflated 0%)
+  adding: DDPM/Celeb/x0_232.png (deflated 0%)
+  adding: DDPM/Celeb/x0_827.png (deflated 0%)
+  adding: DDPM/Celeb/x0_582.png (deflated 0%)
+  adding: DDPM/Celeb/x0_703.png (deflated 0%)
+  adding: DDPM/Celeb/x0_12.png (deflated 0%)
+  adding: DDPM/Celeb/x0_407.png (deflated 0%)
+  adding: DDPM/Celeb/x0_139.png (deflated 0%)
+  adding: DDPM/Celeb/x0_731.png (deflated 0%)
+  adding: DDPM/Celeb/x0_123.png (deflated 0%)
+  adding: DDPM/Celeb/x0_77.png (deflated 0%)
+  adding: DDPM/Celeb/x0_758.png (deflated 0%)
+  adding: DDPM/Celeb/x0_254.png (deflated 0%)
+  adding: DDPM/Celeb/x0_698.png (deflated 0%)
+  adding: DDPM/Celeb/x0_898.png (deflated 0%)
+  adding: DDPM/Celeb/x0_895.png (deflated 0%)
+  adding: DDPM/Celeb/x0_562.png (deflated 0%)
+  adding: DDPM/Celeb/x0_809.png (deflated 0%)
+  adding: DDPM/Celeb/x0_349.png (deflated 0%)
+  adding: DDPM/Celeb/x0_978.png (deflated 0%)
+  adding: DDPM/Celeb/x0_987.png (deflated 0%)
+  adding: DDPM/Celeb/x0_199.png (deflated 0%)
+  adding: DDPM/Celeb/x0_418.png (deflated 0%)
+  adding: DDPM/Celeb/x0_38.png (deflated 0%)
+  adding: DDPM/Celeb/x0_171.png (deflated 0%)
+  adding: DDPM/Celeb/x0_505.png (deflated 0%)
+  adding: DDPM/Celeb/x0_873.png (deflated 0%)
+  adding: DDPM/Celeb/x0_995.png (deflated 0%)
+  adding: DDPM/Celeb/x0_346.png (deflated 0%)
+  adding: DDPM/Celeb/x0_341.png (deflated 0%)
+  adding: DDPM/Celeb/x0_358.png (deflated 0%)
+  adding: DDPM/Celeb/x0_344.png (deflated 0%)
+  adding: DDPM/Celeb/x0_635.png (deflated 0%)
+  adding: DDPM/Celeb/x0_37.png (deflated 0%)
+  adding: DDPM/Celeb/x0_491.png (deflated 0%)
+  adding: DDPM/Celeb/x0_729.png (deflated 0%)
+  adding: DDPM/Celeb/x0_537.png (deflated 0%)
+  adding: DDPM/Celeb/x0_633.png (deflated 0%)
+  adding: DDPM/Celeb/x0_942.png (deflated 0%)
+  adding: DDPM/Celeb/x0_75.png (deflated 0%)
+  adding: DDPM/Celeb/x0_126.png (deflated 0%)
+  adding: DDPM/Celeb/x0_765.png (deflated 0%)
+  adding: DDPM/Celeb/x0_400.png (deflated 0%)
+  adding: DDPM/Celeb/x0_419.png (deflated 0%)
+  adding: DDPM/Celeb/x0_366.png (deflated 0%)
+  adding: DDPM/Celeb/x0_432.png (deflated 0%)
+  adding: DDPM/Celeb/x0_382.png (deflated 0%)
+  adding: DDPM/Celeb/x0_268.png (deflated 0%)
+  adding: DDPM/Celeb/x0_516.png (deflated 0%)
+  adding: DDPM/Celeb/x0_641.png (deflated 0%)
+  adding: DDPM/Celeb/x0_645.png (deflated 0%)
+  adding: DDPM/Celeb/x0_16.png (deflated 0%)
+  adding: DDPM/Celeb/x0_589.png (deflated 0%)
+  adding: DDPM/Celeb/x0_815.png (deflated 0%)
+  adding: DDPM/Celeb/x0_828.png (deflated 0%)
+  adding: DDPM/Celeb/x0_461.png (deflated 0%)
+  adding: DDPM/Celeb/x0_524.png (deflated 0%)
+  adding: DDPM/Celeb/x0_409.png (deflated 0%)
+  adding: DDPM/Celeb/x0_588.png (deflated 0%)
+  adding: DDPM/Celeb/x0_392.png (deflated 0%)
+  adding: DDPM/Celeb/x0_403.png (deflated 0%)
+  adding: DDPM/Celeb/x0_372.png (deflated 0%)
+  adding: DDPM/Celeb/x0_369.png (deflated 0%)
+  adding: DDPM/Celeb/x0_838.png (deflated 0%)
+  adding: DDPM/Celeb/x0_587.png (deflated 0%)
+  adding: DDPM/Celeb/x0_709.png (deflated 0%)
+  adding: DDPM/Celeb/x0_980.png (deflated 0%)
+  adding: DDPM/Celeb/x0_576.png (deflated 0%)
+  adding: DDPM/Celeb/x0_994.png (deflated 0%)
+  adding: DDPM/Celeb/x0_787.png (deflated 0%)
+  adding: DDPM/Celeb/x0_90.png (deflated 0%)
+  adding: DDPM/Celeb/x0_480.png (deflated 0%)
+  adding: DDPM/Celeb/x0_940.png (deflated 0%)
+  adding: DDPM/Celeb/x0_829.png (deflated 0%)
+  adding: DDPM/Celeb/x0_322.png (deflated 0%)
+  adding: DDPM/Celeb/x0_7.png (deflated 0%)
+  adding: DDPM/Celeb/x0_592.png (deflated 0%)
+  adding: DDPM/Celeb/x0_625.png (deflated 0%)
+  adding: DDPM/Celeb/x0_172.png (deflated 0%)
+  adding: DDPM/Celeb/x0_476.png (deflated 0%)
+  adding: DDPM/Celeb/x0_841.png (deflated 0%)
+  adding: DDPM/Celeb/x0_316.png (deflated 0%)
+  adding: DDPM/Celeb/x0_189.png (deflated 0%)
+  adding: DDPM/Celeb/x0_40.png (deflated 0%)
+  adding: DDPM/Celeb/x0_894.png (deflated 0%)
+  adding: DDPM/Celeb/x0_901.png (deflated 0%)
+  adding: DDPM/Celeb/x0_395.png (deflated 0%)
+  adding: DDPM/Celeb/x0_528.png (deflated 0%)
+  adding: DDPM/Celeb/x0_354.png (deflated 0%)
+  adding: DDPM/Celeb/x0_630.png (deflated 0%)
+  adding: DDPM/Celeb/x0_30.png (deflated 0%)
+  adding: DDPM/Celeb/x0_147.png (deflated 0%)
+  adding: DDPM/Celeb/x0_745.png (deflated 0%)
+  adding: DDPM/Celeb/x0_421.png (deflated 0%)
+  adding: DDPM/Celeb/x0_569.png (deflated 0%)
+  adding: DDPM/Celeb/x0_449.png (deflated 0%)
+  adding: DDPM/Celeb/x0_195.png (deflated 0%)
+  adding: DDPM/Celeb/x0_124.png (deflated 0%)
+  adding: DDPM/Celeb/x0_68.png (deflated 0%)
+  adding: DDPM/Celeb/x0_397.png (deflated 0%)
+  adding: DDPM/Celeb/x0_658.png (deflated 0%)
+  adding: DDPM/Celeb/x0_251.png (deflated 0%)
+  adding: DDPM/Celeb/x0_43.png (deflated 0%)
+  adding: DDPM/Celeb/x0_59.png (deflated 0%)
+  adding: DDPM/Celeb/x0_276.png (deflated 0%)
+  adding: DDPM/Celeb/x0_183.png (deflated 0%)
+  adding: DDPM/Celeb/x0_179.png (deflated 0%)
+  adding: DDPM/Celeb/x0_536.png (deflated 0%)
+  adding: DDPM/Celeb/x0_736.png (deflated 0%)
+  adding: DDPM/Celeb/x0_265.png (deflated 0%)
+  adding: DDPM/Celeb/x0_597.png (deflated 0%)
+  adding: DDPM/Celeb/x0_4.png (deflated 0%)
+  adding: DDPM/Celeb/x0_896.png (deflated 0%)
+  adding: DDPM/Celeb/x0_317.png (deflated 0%)
+  adding: DDPM/Celeb/x0_311.png (deflated 0%)
+  adding: DDPM/Celeb/x0_849.png (deflated 0%)
+  adding: DDPM/Celeb/x0_513.png (deflated 0%)
+  adding: DDPM/Celeb/x0_542.png (deflated 0%)
+  adding: DDPM/Celeb/x0_387.png (deflated 0%)
+  adding: DDPM/Celeb/x0_104.png (deflated 0%)
+  adding: DDPM/Celeb/x0_98.png (deflated 0%)
+  adding: DDPM/Celeb/x0_549.png (deflated 0%)
+  adding: DDPM/Celeb/x0_170.png (deflated 0%)
+  adding: DDPM/Celeb/x0_547.png (deflated 0%)
+  adding: DDPM/Celeb/x0_604.png (deflated 0%)
+  adding: DDPM/Celeb/x0_796.png (deflated 0%)
+  adding: DDPM/Celeb/x0_857.png (deflated 0%)
+  adding: DDPM/Celeb/x0_548.png (deflated 0%)
+  adding: DDPM/Celeb/x0_215.png (deflated 0%)
+  adding: DDPM/Celeb/x0_108.png (deflated 0%)
+  adding: DDPM/Celeb/x0_613.png (deflated 0%)
+  adding: DDPM/Celeb/x0_32.png (deflated 0%)
+  adding: DDPM/Celeb/x0_671.png (deflated 0%)
+  adding: DDPM/Celeb/x0_336.png (deflated 0%)
+  adding: DDPM/Celeb/x0_241.png (deflated 0%)
+  adding: DDPM/Celeb/x0_474.png (deflated 0%)
+  adding: DDPM/Celeb/x0_187.png (deflated 0%)
+  adding: DDPM/Celeb/x0_600.png (deflated 0%)
+  adding: DDPM/Celeb/x0_717.png (deflated 0%)
+  adding: DDPM/Celeb/x0_925.png (deflated 0%)
+  adding: DDPM/Celeb/x0_683.png (deflated 0%)
+  adding: DDPM/Celeb/x0_710.png (deflated 0%)
+  adding: DDPM/Celeb/x0_439.png (deflated 0%)
+  adding: DDPM/Celeb/x0_5.png (deflated 0%)
+  adding: DDPM/Celeb/x0_515.png (deflated 0%)
+  adding: DDPM/Celeb/x0_886.png (deflated 0%)
+  adding: DDPM/Celeb/x0_469.png (deflated 0%)
+  adding: DDPM/Celeb/x0_414.png (deflated 0%)
+  adding: DDPM/Celeb/x0_836.png (deflated 0%)
+  adding: DDPM/Celeb/x0_165.png (deflated 0%)
+  adding: DDPM/Celeb/x0_107.png (deflated 0%)
+  adding: DDPM/Celeb/x0_506.png (deflated 0%)
+  adding: DDPM/Celeb/x0_730.png (deflated 0%)
+  adding: DDPM/Celeb/x0_41.png (deflated 0%)
+  adding: DDPM/Celeb/x0_125.png (deflated 0%)
+  adding: DDPM/Celeb/x0_561.png (deflated 0%)
+  adding: DDPM/Celeb/x0_177.png (deflated 0%)
+  adding: DDPM/Celeb/x0_969.png (deflated 0%)
+  adding: DDPM/Celeb/x0_716.png (deflated 0%)
+  adding: DDPM/Celeb/x0_650.png (deflated 0%)
+  adding: DDPM/Celeb/x0_416.png (deflated 0%)
+  adding: DDPM/Celeb/x0_389.png (deflated 0%)
+  adding: DDPM/Celeb/x0_327.png (deflated 0%)
+  adding: DDPM/Celeb/x0_692.png (deflated 0%)
+  adding: DDPM/Celeb/x0_11.png (deflated 0%)
+  adding: DDPM/Celeb/x0_113.png (deflated 0%)
+  adding: DDPM/Celeb/x0_539.png (deflated 0%)
+  adding: DDPM/Celeb/x0_211.png (deflated 0%)
+  adding: DDPM/Celeb/x0_102.png (deflated 0%)
+  adding: DDPM/Celeb/x0_974.png (deflated 0%)
+  adding: DDPM/Celeb/x0_444.png (deflated 0%)
+  adding: DDPM/Celeb/x0_323.png (deflated 0%)
+  adding: DDPM/Celeb/x0_321.png (deflated 0%)
+  adding: DDPM/Celeb/x0_167.png (deflated 0%)
+  adding: DDPM/Celeb/x0_653.png (deflated 0%)
+  adding: DDPM/Celeb/x0_353.png (deflated 0%)
+  adding: DDPM/Celeb/x0_704.png (deflated 0%)
+  adding: DDPM/Celeb/x0_502.png (deflated 0%)
+  adding: DDPM/Celeb/x0_85.png (deflated 0%)
+  adding: DDPM/Celeb/x0_614.png (deflated 0%)
+  adding: DDPM/Celeb/x0_977.png (deflated 0%)
+  adding: DDPM/Celeb/x0_442.png (deflated 0%)
+  adding: DDPM/Celeb/x0_231.png (deflated 0%)
+  adding: DDPM/Celeb/x0_373.png (deflated 0%)
+  adding: DDPM/Celeb/x0_713.png (deflated 0%)
+  adding: DDPM/Celeb/x0_526.png (deflated 0%)
+  adding: DDPM/Celeb/x0_488.png (deflated 0%)
+  adding: DDPM/Celeb/x0_777.png (deflated 0%)
+  adding: DDPM/Celeb/x0_586.png (deflated 0%)
+  adding: DDPM/Celeb/x0_468.png (deflated 0%)
+  adding: DDPM/Celeb/x0_54.png (deflated 0%)
+  adding: DDPM/Celeb/x0_440.png (deflated 0%)
+  adding: DDPM/Celeb/x0_934.png (deflated 0%)
+  adding: DDPM/Celeb/x0_724.png (deflated 0%)
+  adding: DDPM/Celeb/x0_594.png (deflated 0%)
+  adding: DDPM/Celeb/x0_848.png (deflated 0%)
+  adding: DDPM/Celeb/x0_996.png (deflated 0%)
+  adding: DDPM/Celeb/x0_922.png (deflated 0%)
+  adding: DDPM/Celeb/x0_757.png (deflated 0%)
+  adding: DDPM/Celeb/x0_564.png (deflated 0%)
+  adding: DDPM/Celeb/x0_634.png (deflated 0%)
+  adding: DDPM/Celeb/x0_454.png (deflated 0%)
+  adding: DDPM/Celeb/x0_300.png (deflated 0%)
+  adding: DDPM/Celeb/x0_577.png (deflated 0%)
+  adding: DDPM/Celeb/x0_164.png (deflated 0%)
+  adding: DDPM/Celeb/x0_292.png (deflated 0%)
+  adding: DDPM/Celeb/x0_584.png (deflated 0%)
+  adding: DDPM/Celeb/x0_286.png (deflated 0%)
+  adding: DDPM/Celeb/x0_3.png (deflated 0%)
+  adding: DDPM/Celeb/x0_185.png (deflated 0%)
+  adding: DDPM/Celeb/x0_6.png (deflated 0%)
+  adding: DDPM/Celeb/x0_207.png (deflated 0%)
+  adding: DDPM/Celeb/x0_759.png (deflated 0%)
+  adding: DDPM/Celeb/x0_877.png (deflated 0%)
+  adding: DDPM/Celeb/x0_417.png (deflated 0%)
+  adding: DDPM/Celeb/x0_806.png (deflated 0%)
+  adding: DDPM/Celeb/x0_972.png (deflated 0%)
+  adding: DDPM/Celeb/x0_846.png (deflated 0%)
+  adding: DDPM/Celeb/x0_483.png (deflated 0%)
+  adding: DDPM/Celeb/x0_94.png (deflated 0%)
+  adding: DDPM/Celeb/x0_184.png (deflated 0%)
+  adding: DDPM/Celeb/x0_282.png (deflated 0%)
+  adding: DDPM/Celeb/x0_202.png (deflated 0%)
+  adding: DDPM/Celeb/x0_347.png (deflated 0%)
+  adding: DDPM/Celeb/x0_766.png (deflated 0%)
+  adding: DDPM/Celeb/x0_464.png (deflated 0%)
+  adding: DDPM/Celeb/x0_711.png (deflated 0%)
+  adding: DDPM/Celeb/x0_875.png (deflated 0%)
+  adding: DDPM/Celeb/x0_153.png (deflated 0%)
+  adding: DDPM/Celeb/x0_646.png (deflated 0%)
+  adding: DDPM/Celeb/x0_712.png (deflated 0%)
+  adding: DDPM/Celeb/x0_851.png (deflated 0%)
+  adding: DDPM/Celeb/x0_701.png (deflated 0%)
+  adding: DDPM/Celeb/x0_144.png (deflated 0%)
+  adding: DDPM/Celeb/x0_27.png (deflated 0%)
+  adding: DDPM/Celeb/x0_655.png (deflated 0%)
+  adding: DDPM/Celeb/x0_544.png (deflated 0%)
+  adding: DDPM/Celeb/x0_551.png (deflated 0%)
+  adding: DDPM/Celeb/x0_718.png (deflated 0%)
+  adding: DDPM/Celeb/x0_876.png (deflated 0%)
+  adding: DDPM/Celeb/x0_106.png (deflated 0%)
+  adding: DDPM/Celeb/x0_237.png (deflated 0%)
+  adding: DDPM/Celeb/x0_656.png (deflated 0%)
+  adding: DDPM/Celeb/x0_598.png (deflated 0%)
+  adding: DDPM/Celeb/x0_953.png (deflated 0%)
+  adding: DDPM/Celeb/x0_769.png (deflated 0%)
+  adding: DDPM/Celeb/x0_768.png (deflated 0%)
+  adding: DDPM/Celeb/x0_406.png (deflated 0%)
+  adding: DDPM/Celeb/x0_637.png (deflated 0%)
+  adding: DDPM/Celeb/x0_702.png (deflated 0%)
+  adding: DDPM/Celeb/x0_649.png (deflated 0%)
+  adding: DDPM/Celeb/x0_2.png (deflated 0%)
+  adding: DDPM/Celeb/x0_795.png (deflated 0%)
+  adding: DDPM/Celeb/x0_18.png (deflated 0%)
+  adding: DDPM/Celeb/x0_779.png (deflated 0%)
+  adding: DDPM/Celeb/x0_501.png (deflated 0%)
+  adding: DDPM/Celeb/x0_26.png (deflated 0%)
+  adding: DDPM/Celeb/x0_979.png (deflated 0%)
+  adding: DDPM/Celeb/x0_405.png (deflated 0%)
+  adding: DDPM/Celeb/x0_663.png (deflated 0%)
+  adding: DDPM/Celeb/x0_498.png (deflated 0%)</code></pre>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  const viewSource = window.document.getElementById('quarto-view-source') ||
+                     window.document.getElementById('quarto-code-tools-source');
+  if (viewSource) {
+    const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+    viewSource.addEventListener("click", function(e) {
+      if (sourceUrl) {
+        // rstudio viewer pane
+        if (/\bcapabilities=\b/.test(window.location)) {
+          window.open(sourceUrl);
+        } else {
+          window.location.href = sourceUrl;
+        }
+      } else {
+        const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+        modal.show();
+      }
+      return false;
+    });
+  }
+  function toggleCodeHandler(show) {
+    return function(e) {
+      const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+      for (let i=0; i<detailsSrc.length; i++) {
+        const details = detailsSrc[i].parentElement;
+        if (show) {
+          details.open = true;
+        } else {
+          details.removeAttribute("open");
+        }
+      }
+      const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+      const fromCls = show ? "hidden" : "unhidden";
+      const toCls = show ? "unhidden" : "hidden";
+      for (let i=0; i<cellCodeDivs.length; i++) {
+        const codeDiv = cellCodeDivs[i];
+        if (codeDiv.classList.contains(fromCls)) {
+          codeDiv.classList.remove(fromCls);
+          codeDiv.classList.add(toCls);
+        } 
+      }
+      return false;
+    }
+  }
+  const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+  if (hideAllCode) {
+    hideAllCode.addEventListener("click", toggleCodeHandler(false));
+  }
+  const showAllCode = window.document.getElementById("quarto-show-all-code");
+  if (showAllCode) {
+    showAllCode.addEventListener("click", toggleCodeHandler(true));
+  }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Website made with <a href="https://quarto.org/">Quarto</a>, by Guntas Singh Saran.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/guntas-13/">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://www.instagram.com/guntas.saran13/">
+      <i class="bi bi-instagram" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/guntas-singh-saran-2b8811179/">
+      <i class="bi bi-linkedin" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="mailto:guntassingh.saran@iitgn.ac.in">
+      <i class="bi bi-envelope" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+<script src="../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
