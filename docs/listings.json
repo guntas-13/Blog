@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/InPainting/InPainting.html",
       "/posts/LDM/LatentDiff.html",
       "/posts/DDPMCeleb/DDPM_Celeb.html",
       "/posts/DDPM/DDPM.html",
