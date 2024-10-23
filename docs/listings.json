@@ -2,6 +2,8 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/Corner/HarrisCorner.html",
+      "/posts/Blend/LaplacianBlending.html",
       "/posts/InPainting/InPainting.html",
       "/posts/LDM/LatentDiff.html",
       "/posts/DDPMCeleb/DDPM_Celeb.html",
