@@ -1,0 +1,700 @@
+---
+title: Panoramic Image Stitching
+description: Explore the complicacies of handling multi-image stitching
+author: ["Guntas Singh Saran"]
+date: "2024-12-07"
+image: "stitcher.png"
+categories: ["Computer Vision"]
+bibliography: "references.bib"
+csl: "ieee.csl"
+toc: false
+format: 
+    html: 
+        code-fold: show
+        code-summary: "Show the code"
+        page-layout: full
+---
+
+- **Final source Code** available at [https://github.com/guntas-13/ES666-Assignment3](https://github.com/guntas-13/ES666-Assignment3).
+- Do checkout the other blog at [Notebook Blog](https://guntas-13.github.io/Blog/posts/stitch/stitch.html).
+- Some inspiration from [https://github.com/CorentinBrtx/image-stitching](https://github.com/CorentinBrtx/image-stitching).
+- Special thanks to [\@Robohrriday](https://github.com/Robohrriday) for his immense help during various stages of execution of this assignment.
+
+# Introduction
+
+Given a set of $N$ images $I_1, I_2, \ldots, I_N$ with some overlap of the actual 3-D scene, taken from a static camera with only a rotational degree of freedom, the objective is to warp and stitch the images to form a **Panoramic-Stitched Image**.
+
+![](./images/Result.png)
+<p style="text-align: center; color: #5f9ea0;">A Panoramic-Stitched Image.</p>
+
+# Homography Estimation
+
+### Scale-Invariant Feature Transform (SIFT)
+The SIFT algorithm [@SIFTarticle] is one of the commonly used algorithms developed for the purpose of interest point detection and description. It detects keypoints in an image that are scale/shift-invariant and provides a 128-dimension feature description for each of the keypoints detected in an image. A variant of this algorithm is implemented in [OpenCV](https://opencv.org/) as ` cv2.SIFT_create()`
+
+<center>
+![](./images/SIFT.png){width="60%"}
+</center>
+
+<p style="text-align: center; color: #5f9ea0;">SIFT-detected Keypoints.</p>
+
+### Finding the Point Correspondances
+Now given the SIFT keypoints in two images, we need to find the matching keypoints in both the images i.e. to compare every 128-dimension feature vector of one image with every other feature vector of the other image to find the closest match. This is usually done with the help of some approximate KNN algorithm (KD Tree here).
+
+Code for SIFT feature detection and Matching:
+```{python}
+def detect_and_match_features(img1, img2):
+    sift = cv2.SIFT_create()
+    
+    keypoints1, descriptors1 = sift.detectAndCompute(img1, None)
+    keypoints2, descriptors2 = sift.detectAndCompute(img2, None)
+
+    FLANN_INDEX_KDTREE = 1
+    index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
+    search_params = dict(checks=50)
+    flann = cv2.FlannBasedMatcher(index_params, search_params)
+
+    matches = flann.knnMatch(descriptors1, descriptors2, k=2)
+    
+    good_matches = []
+    for m, n in matches:
+        if m.distance < 0.75 * n.distance:
+            good_matches.append(m)
+
+    points1 = np.zeros((len(good_matches), 2), dtype=np.float32)
+    points2 = np.zeros((len(good_matches), 2), dtype=np.float32)
+    
+    for i, match in enumerate(good_matches):
+        points1[i, :] = keypoints1[match.queryIdx].pt
+        points2[i, :] = keypoints2[match.trainIdx].pt
+
+    return points1, points2, keypoints1, keypoints2, good_matches
+```
+
+<center>
+![](./images/Match.png){width="85%"}
+</center>
+
+<p style="text-align: center; color: #5f9ea0;">Feature Matching in two Images.</p>
+
+## Robust Estimation of Homography Matrix (RANSAC)
+A **homography matrix** $H$ is a $3 \times 3$ matrix that relates corresponding points between two images in projective space $\mathbb{P}^2$. Given a point $\mathbf{x} = [x, y, 1]^T$ in one image, its corresponding point $\mathbf{x}' = [x', y', 1]^T$ in the second image can be expressed as:
+$$
+\mathbf{x}' \sim H \mathbf{x},
+$$
+
+where $\sim$ indicates equality up to a scale factor.
+
+The homography matrix $H$ has **8 degrees of freedom (DOF)** hence **atleast 4 point correspondances** are needed (as 1 point correspondance gives 2 equations), as it has 9 entries but is defined up to a scale factor. It is generally represented as:
+
+$$
+H =
+\begin{bmatrix}
+h_{11} & h_{12} & h_{13} \\
+h_{21} & h_{22} & h_{23} \\
+h_{31} & h_{32} & h_{33}
+\end{bmatrix},
+$$
+
+where one of the entries is fixed (e.g., $h_{33} = 1$) to remove the scale ambiguity.
+
+The estimation of the homography matrix involves solving a linear system of equations derived from point correspondences. For a pair of corresponding points $(x, y)$ and $(x', y')$, the following two equations are obtained:
+$$
+x' = \frac{h_{11}x + h_{12}y + h_{13}}{h_{31}x + h_{32}y + h_{33}}, \quad y' = \frac{h_{21}x + h_{22}y + h_{23}}{h_{31}x + h_{32}y + h_{33}}.
+$$
+
+Rewriting these equations in matrix form, they contribute two rows to the system $A \mathbf{h} = 0$, where $\mathbf{h}$ is the vectorized homography matrix. The homography is obtained by solving this system using singular value decomposition (SVD).
+
+The provided code implements a RANSAC-based algorithm to estimate the homography matrix robustly in the presence of outliers. The steps are as follows:
+
+- Randomly select 4 point correspondences to compute a candidate homography $H$ using the $\texttt{compute\_homography}$ function.
+- Transform all points from the first image using $H$ and compute the reprojection error with respect to the second image points.
+- Identify inliers as points with a reprojection error below a given threshold.
+- Repeat the process for a fixed number of iterations, retaining the homography with the largest number of inliers.
+- Recompute $H$ using all inliers for the final estimate.
+
+Code for Homography estimation using RANSAC
+```{python}
+def compute_homography(pts1, pts2):
+    A = []
+    for i in range(len(pts1)):
+        x, y = pts1[i][0], pts1[i][1]
+        x_prime, y_prime = pts2[i][0], pts2[i][1]
+        A.append([-x, -y, -1, 0, 0, 0, x * x_prime, y * x_prime, x_prime])
+        A.append([0, 0, 0, -x, -y, -1, x * y_prime, y * y_prime, y_prime])
+    A = np.array(A)
+    _, _, Vt = np.linalg.svd(A)
+    H = Vt[-1].reshape(3, 3)
+    return H / H[2, 2]
+
+def compute_homography_ransac(points1, points2, iterations=1000, threshold=5.0):
+    max_inliers = []
+    points1_h = np.hstack([points1, np.ones((points1.shape[0], 1))])
+    points2_h = np.hstack([points2, np.ones((points2.shape[0], 1))])
+
+    for _ in range(iterations):
+        idxs = np.random.choice(len(points1), 4, replace=False)
+        pts1_sample = points1[idxs]
+        pts2_sample = points2[idxs]
+
+        H = compute_homography(pts1_sample, pts2_sample)
+
+        projected_points = (H @ points1_h.T).T
+        projected_points /= projected_points[:, 2:3]
+
+        distances = np.linalg.norm(points2_h[:, :2] - projected_points[:, :2], axis=1)
+        inliers = np.where(distances < threshold)[0]
+
+        if len(inliers) > len(max_inliers):
+            max_inliers = inliers
+            
+    inlier_pts1 = points1[max_inliers]
+    inlier_pts2 = points2[max_inliers]
+    best_H = compute_homography(inlier_pts1, inlier_pts2)
+
+    return best_H, len(max_inliers)
+```
+
+# The Naive Approach *[Theoretically Correct]*
+Source: [First Principles of Computer Vision Channel by Shree K. Nayar](https://youtube.com/playlist?list=PL2zRqk16wsdp8KbDfHKvPYNGF2L-zQASc&si=XrWXLeeuW42d67UD)
+
+<center>
+![](./images/Ref.png){width="80%"}
+</center>
+<p style="text-align: center; color: #5f9ea0;">Computing Homographies of all images with respect tot the reference image.</p>
+
+To create a seamless panorama, the algorithm selects a **reference image** $I_r$ around which all other images are aligned. The choice of the reference image depends on the total number of images $n$:
+$$
+r = 
+\begin{cases} 
+\frac{n}{2} - 1 & \text{if } n \text{ is even,} \\ 
+\left\lfloor \frac{n}{2} \right\rfloor & \text{if } n \text{ is odd.}
+\end{cases}
+$$
+
+For a set of images $\{I_0, I_1, \ldots, I_{n-1}\}$, the goal is to compute the homography of every image $I_i$ with respect to $I_r$, denoted as $H_{ri}$. Since non-consecutive images may not have sufficient overlap, the algorithm leverages the following principle:
+
+- Compute consecutive homographies $H_{i, i+1}$, representing the transformation from image $I_i$ to $I_{i+1}$.
+- For images to the left of the reference, the homography $H_{ri}$ is computed by chaining transformations:
+    $$
+    H_{ri} = H_{r, r-1} H_{r-1, r-2} \cdots H_{i+1, i}.
+    $$
+
+- For images to the right of the reference, the homography is computed similarly:
+    $$
+    H_{ri} = H_{r, r+1} H_{r+1, r+2} \cdots H_{i-1, i}.
+    $$
+
+
+### Canvas Size Calculation
+Once all the homographies $H_{ri}$ are computed, the transformed corners of each image are calculated using the homographies. Let the corners of an image $I_i$ be represented in homogeneous coordinates as:
+$$
+\mathbf{c}_i = 
+\begin{bmatrix}
+0 & 0 & 1 \\
+0 & h_i - 1 & 1 \\
+w_i - 1 & h_i - 1 & 1 \\
+w_i - 1 & 0 & 1
+\end{bmatrix}^T,
+$$
+
+where $w_i$ and $h_i$ are the width and height of $I_i$, respectively.
+
+The transformed corners are given by:
+$$
+\mathbf{c}_i' = H_{ri} \mathbf{c}_i.
+$$
+
+Since the transformed corners $\mathbf{c}_i'$ are also in homogeneous coordinates, they are converted back to Cartesian coordinates by normalizing with the third component:
+$$
+\mathbf{c}_i' = 
+\begin{bmatrix}
+\frac{x'}{z'} & \frac{y'}{z'}
+\end{bmatrix},
+$$
+
+where $\mathbf{c}_i' = [x', y', z']^T$.
+
+From the transformed corners of all images, the global bounds of the panorama are determined:
+$$
+\texttt{min\_x} = \min_i (\mathbf{c}_i'[:, 0]), \quad
+\texttt{max\_x} = \max_i (\mathbf{c}_i'[:, 0]),
+$$
+$$
+\texttt{min\_y} = \min_i (\mathbf{c}_i'[:, 1]), \quad
+\texttt{max\_y} = \max_i (\mathbf{c}_i'[:, 1]).
+$$
+The final canvas size is then computed as:
+$$
+\texttt{width} = \texttt{max\_x} - \texttt{min\_x}, \quad
+\texttt{height} = \texttt{max\_y} - \texttt{min\_y}.
+$$
+
+### Image Warping and Final Stitching
+To align all images within the same canvas, a **shift matrix** is applied to adjust for the minimum $x$ and $y$ coordinates:
+$$
+S = 
+\begin{bmatrix}
+1 & 0 & -\texttt{min\_x} \\
+0 & 1 & -\texttt{min\_y} \\
+0 & 0 & 1
+\end{bmatrix}.
+$$
+
+<center>
+![](./images/Warp.png){width="80%"}
+</center>
+<p style="text-align: center; color: #5f9ea0;">Warp all images using the homographies wrt reference image.</p>
+
+The final homography for each image $I_i$ with respect to the canvas is:
+$$
+H_{i, \text{canvas}} = S H_{ri}.
+$$
+
+Each image is warped onto the canvas using OpenCV's $\texttt{cv2.warpPerspective}$ function, which performs **inverse mapping**:
+$$
+\mathbf{p}_{\text{source}} = H_{i, \text{canvas}}^{-1} \mathbf{p}_{\text{destination}},
+$$
+
+where $\mathbf{p}_{\text{destination}}$ represents a pixel in the canvas, and $\mathbf{p}_{\text{source}}$ is the corresponding pixel in the original image. Since $\mathbf{p}_{\text{source}}$ may not lie on integer coordinates, interpolation (e.g., bilinear) is used to compute pixel values.
+
+### Final Panorama Composition
+The warped images are combined into a single panorama. Two strategies are used:
+
+- **First-over-last blending:** Images are combined in reverse order, with earlier images overwriting the later ones.
+- **Accumulative blending:** All non-zero pixel values from each warped image are combined sequentially.
+
+Code for this simple approach:
+```{python}
+def panorama_stitcher(images, useOpenCV = False, first_over_last = True):
+    """
+    Args:
+        images (List): List of Images to be stitched together
+    """
+    
+    assert len(images) >= 2, "Number of images should be greater than or equal to 2!"
+    
+    # suppose the consecutive homography matrices are H01, H12, H23, H34, H45 and the reference images is I2
+    # we need H02, H12, H23, H24, H25 (homographies wrt to the reference image)
+    # H02 = H01 * H12, H24 = H23 * H34, H25 = H24 * H45
+    
+    homographies_wrt_reference = [None] * (len(images) - 1)
+    
+    if len(images) % 2 == 0:
+        reference_idx = (len(images) // 2) - 1
+    else:
+        reference_idx = len(images) // 2
+        
+    print(reference_idx)
+    
+    # Homographies of Consecutive Images
+    homographies = []
+    for i in range(1, reference_idx + 1):
+        H = estimate_homography(images[i - 1], images[i], useOpenCV)
+        homographies.append(H)
+    
+    for i in range(reference_idx, len(images) - 1):
+        H = estimate_homography(images[i + 1], images[i], useOpenCV)
+        homographies.append(H)
+    # print(homographies)
+    
+    homographies_wrt_reference[reference_idx] = homographies[reference_idx]
+    if reference_idx >= 1:
+        homographies_wrt_reference[reference_idx - 1] = homographies[reference_idx - 1]
+    
+    # print(homographies_wrt_reference)
+    for i in range(reference_idx - 2, -1, -1):
+        homographies_wrt_reference[i] = np.dot(homographies[i], homographies_wrt_reference[i + 1])
+    
+    for i in range(reference_idx + 1, len(images) - 1):
+        homographies_wrt_reference[i] = np.dot(homographies_wrt_reference[i - 1], homographies[i])
+    
+    # homographies_wrt_reference = [H02, H12, H23, H24, H25] same as the indices of images by inserting a None at the reference index
+    homographies_wrt_reference.insert(reference_idx, None)
+    # now homographies_wrt_reference = [H02, H12, None, H23, H24, H25]
+    # print(homographies_wrt_reference)
+    
+    # computing the transformed corners of all the images
+    min_xs, max_xs, min_ys, max_ys = np.inf, -np.inf, np.inf, -np.inf
+    for i in range(len(images)):
+        if i == reference_idx:
+            continue
+        dest_corners, min_x, min_y, max_x, max_y = transform_corners(images[i], homographies_wrt_reference[i])
+        min_xs = min(min_xs, min_x)
+        max_xs = max(max_xs, max_x)
+        min_ys = min(min_ys, min_y)
+        max_ys = max(max_ys, max_y)
+        print(dest_corners)
+        print(min_x, min_y, max_x, max_y)
+        print("=============================\n")
+    print(max_xs, min_xs, max_ys, min_ys)
+    
+    # final canvas size
+    final_canvas_width = int(max_xs - min_xs)
+    final_canvas_height = int(max_ys - min_ys)
+    print(f"(Width, Height) = ({final_canvas_width}, {final_canvas_height})")
+    
+    # now we need to shift all the images taking into account the min_x and min_y
+    shift_matrix = np.array([[1, 0, -min_xs], [0, 1, -min_ys], [0, 0, 1]])
+    
+    final_homographies_wrt_reference = []
+    for i in range(len(images)):
+        if i == reference_idx:
+            final_homographies_wrt_reference.append(shift_matrix)
+        else:
+            final_homographies_wrt_reference.append(np.dot(shift_matrix, homographies_wrt_reference[i]))
+    
+    visualize_homography_corners(images, final_homographies_wrt_reference, final_canvas_width, final_canvas_height)
+    
+    warped_images = []
+    
+    for i in range(len(images)):
+        warped_images.append(cv2.warpPerspective(images[i], final_homographies_wrt_reference[i], (final_canvas_width, final_canvas_height)))
+    
+    # plotting individual warped images
+    for i in range(len(warped_images)):
+        plt.figure(figsize=(15, 15))
+        plt.title(f"Image {i + 1}")
+        plt.imshow(cv2.cvtColor(warped_images[i], cv2.COLOR_BGR2RGB))
+        plt.axis('off')
+        plt.show()
+    
+    if first_over_last:
+        final_image = warped_images[-1].copy()
+        for i in range(len(images) - 2, -1, -1):
+            non_zero_indices = np.nonzero(warped_images[i])
+            final_image[non_zero_indices] = warped_images[i][non_zero_indices]
+    else:
+        final_image = np.zeros_like(warped_images[0])
+        for i in range(len(images)):
+            non_zero_indices = np.nonzero(warped_images[i])
+            final_image[non_zero_indices] = warped_images[i][non_zero_indices]
+    
+    plt.figure(figsize=(15, 15))
+    plt.title("Final Image")
+    plt.imshow(cv2.cvtColor(final_image, cv2.COLOR_BGR2RGB))
+    plt.axis('off')
+    plt.show()
+    
+    return warped_images
+```
+Output:
+```bash
+2
+[[-5008.472     -611.777   ]
+ [-5937.4375    3009.8218  ]
+ [ -587.5613    2644.8523  ]
+ [ -347.63306     26.290306]]
+-5937.4375 -611.777 -347.63306 3009.8218
+=============================
+
+[[-1964.2637   -226.8197 ]
+ [-2486.629    2658.986  ]
+ [ 1540.8529   2553.5437 ]
+ [ 1683.7982     48.38358]]
+-2486.629 -226.8197 1683.7982 2658.986
+=============================
+
+[[1789.1836     65.615555]
+ [1860.5791   2376.226   ]
+ [5154.1025   2485.239   ]
+ [5083.1216    -43.93821 ]]
+1789.1836 -43.93821 5154.1025 2485.239
+=============================
+
+[[3141.279      80.706474]
+ [3192.036    2416.6748  ]
+ [6938.0474   2743.146   ]
+ [6869.2407    -80.182846]]
+3141.279 -80.182846 6938.0474 2743.146
+=============================
+
+[[ 4988.6816      29.972841]
+ [ 5091.458     2548.468   ]
+ [10146.665     3168.1335  ]
+ [ 9960.408     -373.7504  ]]
+4988.6816 -373.7504 10146.665 3168.1335
+=============================
+
+10146.665 -5937.4375 3168.1335 -611.777
+(Width, Height) = (16084, 3779)
+```
+
+![](./images/1.png)
+![](./images/2.png)
+![](./images/3.png)
+![](./images/4.png)
+![](./images/5.png)
+![](./images/6.png)
+![](./images/7.png)
+![](./images/8.png)
+
+But here's the catch - this approach works just fine considering the camera is **not translated**. Notice the inherent digital lens problem that cause a **brightness change** for the side edges of the images, indicated by the **crease line** between the images. Further all the **projections are independent** of their neighbouring images and only based on the reference image, hence it may not happen that consecutive images, which had a significant overlap, will actually blend well as seen above. And, the placing of images just above/under - clearly, **overwriting the pixels** of the other image, is not be ideal.
+
+# The Robust Approach
+Since, we have noticed the theoretically correct approach **does not give seamless blend**, hence we levarage the **good overlap** of consecutive images to enhance the blend. <br>
+In this approach, we enhance the blending of consecutive images by leveraging a **distance transform-based weighting**. This ensures smooth transitions in overlapping regions, avoiding visible seams and artifacts. Below is the step-by-step methodology.
+
+### Weight Matrix Construction
+For a single image, a 2D weight matrix is constructed based on a distance transform. The weights are higher near the center and taper off towards the edges. For an image of size $h \times w$, the weight matrix is given by:
+
+$$
+W(i, j) = \frac{d(i, j)}{\max_{i,j} d(i, j)},
+$$
+
+where $d(i, j)$ represents the Euclidean distance from the pixel $(i, j)$ to the nearest edge. This is computed using:
+
+$$
+d(i, j) = \min(\text{dist}(i, 0), \text{dist}(i, h-1), \text{dist}(j, 0), \text{dist}(j, w-1)).
+$$
+
+
+The weights are then normalized across the entire matrix to ensure smooth blending.
+
+<center>
+![](./images/Im2Dist.png){width="60%"}
+</center>
+<p style="text-align: center; color: #5f9ea0;">A variant of a simple Distance Transform.</p>
+
+Code for a simple distance transform:
+```{python}
+import numpy as np
+
+def single_weights_array(size: int) -> np.ndarray:
+    """
+    Create a 1D weights array.
+
+    Args:
+        size: Size of the array
+
+    Returns:
+        weights: 1D weights array
+    """
+    if size % 2 == 1:
+        return np.concatenate(
+            [np.linspace(0, 1, (size + 1) // 2), np.linspace(1, 0, (size + 1) // 2)[1:]]
+        )
+    else:
+        return np.concatenate([np.linspace(0, 1, size // 2), np.linspace(1, 0, size // 2)])
+
+
+def single_weights_matrix(shape: tuple[int]) -> np.ndarray:
+    """
+    Create a 2D weights matrix.
+
+    Args:
+        shape: Shape of the matrix
+
+    Returns:
+        weights: 2D weights matrix
+    """
+    return (
+        single_weights_array(shape[0])[:, np.newaxis]
+        @ single_weights_array(shape[1])[:, np.newaxis].T
+    )
+```
+
+### Blending Consecutive Images
+Let $I_1$ and $I_2$ be two consecutive images. Their homography matrix $H_{12}$ is computed such that:
+
+$$
+H_{12} \mathbf{p}_1 = \mathbf{p}_2,
+$$
+
+where $\mathbf{p}_1$ and $\mathbf{p}_2$ are corresponding points in $I_1$ and $I_2$, respectively. 
+
+### Steps:
+1. **Warping Images**:
+   - Using the computed homography $H_{12}$, $I_1$ is warped onto the coordinate space of $I_2$:
+   
+   $$
+   I_1' = \text{warp}(I_1, H_{12}),
+   $$
+
+   where the warp operation involves **inverse mapping** to find the source pixel for each destination pixel and interpolating pixel values.
+
+   Similarly, $I_2$ is translated using a shift matrix $S$ derived from the minimum x and y coordinates of the transformed corners.
+
+2. **Warping Weights**:
+   - The weight matrices for $I_1$ and $I_2$, denoted as $W_1$ and $W_2$, are also warped using the same transformations.
+
+3. **Blending**:
+   - The total weight at each pixel is computed as:
+   
+   $$
+   W_{\text{total}}(i, j) = W_1'(i, j) + W_2'(i, j).
+   $$
+
+   - The normalized weights are:
+   
+   $$
+   \hat{W}_1'(i, j) = \frac{W_1'(i, j)}{W_{\text{total}}(i, j)}, \quad 
+   \hat{W}_2'(i, j) = \frac{W_2'(i, j)}{W_{\text{total}}(i, j)}.
+   $$
+
+   - The blended image is then obtained as:
+   
+   $$
+   I_{\text{blend}}(i, j) = \hat{W}_1'(i, j) I_1'(i, j) + \hat{W}_2'(i, j) I_2'(i, j).
+   $$
+
+
+### Iterative Blending of Images
+The way we will approach is from both sides - keeping the reference images still as the middle one.
+
+1. Start in **Forward Direction (Left to Right)**, take Image1 and Image2. Keeping Image2 as the reference, warp Image1 and translate Image2 so that they overlap.
+
+<center>
+![](./images/Im2Wrp.png){width="60%"}
+</center>
+<center>
+![](./images/Im1Tr.png){width="60%"}
+</center>
+
+2. Compute their distance transforms too and apply the same homography and shift matrices to the respective ones.
+
+<center>
+![](./images/Im2Dist.png){width="60%"}
+</center>
+<center>
+![](./images/Im1Dist.png){width="60%"}
+</center>
+
+3. Blend the two images by adding them with their respective distance transforms.
+
+<center>
+![](./images/Blend.png){width="60%"}
+</center>
+
+4. We call this blended image as $\texttt{Image12}$ and we will also add and normalise their **combined ditance transform**.
+
+<center>
+![](./images/DistComb.png){width="60%"}
+</center>
+
+5. Likewise we will now take this $\texttt{Image12}$ and $\texttt{Image3}$, with $\texttt{Image3}$ as the reference. Notice how we will warp the entire blended $\texttt{Image12}$ using the Homography $H_{23}$ between $\texttt{Image2}$ and $\texttt{Image3}$. Doing the same for their distance transforms too and saving the final distance transform too.
+
+<center>
+![](./images/Im12Wrp.png){width="60%"}
+</center>
+<center>
+![](./images/Im3.png){width="60%"}
+</center>
+<center>
+![](./images/Dist3.png){width="60%"}
+</center>
+<center>
+![](./images/Dist2.png){width="60%"}
+</center>
+<center>
+![](./images/Blend.png){width="60%"}
+</center>
+<center>
+![](./images/Dist123.png){width="60%"}
+</center>
+
+6. Repeat the same process but in the **Backward Direction (Right to Left)** and reverse order - $\texttt{Image6}$ and $\texttt{Image5}$ $\to$ $\texttt{Image65}$, and then $\texttt{Image65}$ and $\texttt{Image4}$ $\to$ $\texttt{Image654}$.
+
+<center>
+![](./images/Combine654.png){width="70%"}
+</center>
+
+1. Now we need to blend these two sides - the Forward and Backward Segments - again use the Homography $H_{34}$ i.e between $\texttt{Image3}$ and $\texttt{Image4}$ to warp/translate the entire blended segments $\texttt{Image123}$ and $\texttt{Image654}$.
+
+![](./images/FinForward.png)
+![](./images/FinBackward.png)
+![](./images/DistForward.png)
+![](./images/DistBackward.png)
+
+8. Finally, we get the seamless image - clearly the **ghosting effect** shows that images we not taken from a perfect rotating camera and there was some translation introduced - further the subjects moved in the meanwhile of taking those pictures.
+
+![](./images/Result.png)
+
+# A Notorius Case - *Big Panoramas*
+Source: [Ancient Secrets of Computer Vision Channel](https://www.youtube.com/watch?v=taty6lPVcmA)
+
+### Problem with Planes :(
+Notice that if the images are too wide in their scene, then their **projection onto a plane** will be highly elongated
+
+<center>
+![](./images/Plane.png){width="60%"}
+</center>
+<p style="text-align: center; color: #5f9ea0;">Problem with Projecting onto a Plane.</p>
+<center>
+![](./images/Skew1.png){width="80%"}
+</center>
+<p style="text-align: center; color: #5f9ea0;">Wide Panoramas in action (Visualization).</p>
+<center>
+![](./images/skew2.png){width="80%"}
+</center>
+<p style="text-align: center; color: #5f9ea0;">Wide Panoramas in action.</p>
+
+### Use Cylinders!
+Rather than a flat plane - the idea is to **project the images onto a cylinder** so that the span of each image is roughly the same
+
+<center>
+![](./images/Cylinder.png){width="60%"}
+</center>
+<p style="text-align: center; color: #5f9ea0;">Projecting onto a cylindrical surface ensures all projections of similar span.</p>
+<center>
+![](./images/CylinderProject.png){width="60%"}
+</center>
+<p style="text-align: center; color: #5f9ea0;">Cylindrical Projection.</p>
+
+```{python}
+def cylindrical_warp(image, focal_length):
+    h, w = image.shape[:2]
+    x_c, y_c = w // 2, h // 2
+
+    u, v = np.meshgrid(np.arange(w), np.arange(h))
+
+    theta = (u - x_c) / focal_length
+    h_cyl = (v - y_c) / focal_length
+
+    x_hat = np.sin(theta)
+    y_hat = h_cyl
+    z_hat = np.cos(theta)
+
+    x_img = (focal_length * x_hat / z_hat + x_c).astype(np.int32)
+    y_img = (focal_length * y_hat / z_hat + y_c).astype(np.int32)
+
+    valid_mask = (x_img >= 0) & (x_img < w) & (y_img >= 0) & (y_img < h)
+
+    cylindrical_img = np.zeros_like(image)
+    cylindrical_img[v[valid_mask], u[valid_mask]] = image[y_img[valid_mask], x_img[valid_mask]]
+
+    cylindrical_img = Image.fromarray(cylindrical_img)
+    cylindrical_img = cylindrical_img.crop((u[valid_mask].min(), v[valid_mask].min(), u[valid_mask].max(), v[valid_mask].max()))
+    cylindrical_img = np.array(cylindrical_img)
+
+    return cylindrical_img
+```
+
+![](./images/Cyl1.png)
+<p style="text-align: center; color: #5f9ea0;">Image Projections with f = 400.</p>
+![](./images/Cyl2.png)
+<p style="text-align: center; color: #5f9ea0;">Image Projections with f = 800.</p>
+
+All you now need to do is this pre-processing before our usual algorithm. Note that all panoramic set of images **might not require cylindrical warping**. There are ways in which OpenCV's implementation handles the calculation of **focal length** (and that too estimating the **pixel density** since actual focal length is in **mm** and not **pixels**). For this implementation, I had **heuristically figured** out the focal length (although you can look at the image properties in your file manager - that might reveal the camera details that took that picture) and that too only for two set of panoramic images - rest worked just fine without it.
+
+![](./images/Result2.png)
+<p style="text-align: center; color: #5f9ea0;">Final Panoramic stitching using f = 800.</p>
+![](./images/Result3.png)
+<p style="text-align: center; color: #5f9ea0;">Final Panoramic stitching using f = 800.</p>
+
+# Final Results
+
+![](./images/Result.png)
+<p style="text-align: center; color: #5f9ea0;">Panorama 1.</p>
+![](./images/Result2.png)
+<p style="text-align: center; color: #5f9ea0;">Panorama 2 with f = 800.</p>
+![](./images/Result3.png)
+<p style="text-align: center; color: #5f9ea0;">Panorama 3 with f = 800.</p>
+![](./images/Result4.png)
+<p style="text-align: center; color: #5f9ea0;">Panorama 4.</p>
+![](./images/Result5.png)
+<p style="text-align: center; color: #5f9ea0;">Panorama 5.</p>
+![](./images/Result6.png)
+<p style="text-align: center; color: #5f9ea0;">Panorama 6.</p>
+
+Hope you had a great time learning and have an even time implementing it on your own!

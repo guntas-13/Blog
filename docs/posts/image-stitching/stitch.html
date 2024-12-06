@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.549">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Guntas Singh Saran">
+<meta name="dcterms.date" content="2024-12-07">
+<meta name="description" content="Explore the complicacies of handling multi-image stitching">
+
+<title>Guntas Blog - Panoramic Image Stitching</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../tabicon.png" rel="icon" type="image/png">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Guntas Blog</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="https://guntas-13.github.io"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/guntas-13"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/guntas-singh-saran-2b8811179/"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.instagram.com/guntas.saran13/"> <i class="bi bi-instagram" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="mailto:guntassingh.saran@iitgn.ac.in"> <i class="bi bi-envelope" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-page">
+      <h1 class="title">Panoramic Image Stitching</h1>
+                  <div>
+        <div class="description">
+          Explore the complicacies of handling multi-image stitching
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">Computer Vision</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta column-page">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Guntas Singh Saran </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">December 7, 2024</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content quarto-banner-title-block column-page" id="quarto-document-content">
+
+
+
+
+
+<ul>
+<li><strong>Final source Code</strong> available at <a href="https://github.com/guntas-13/ES666-Assignment3">https://github.com/guntas-13/ES666-Assignment3</a>.</li>
+<li>Do checkout the other blog at <a href="https://guntas-13.github.io/Blog/posts/stitch/stitch.html">Notebook Blog</a>.</li>
+<li>Some inspiration from <a href="https://github.com/CorentinBrtx/image-stitching">https://github.com/CorentinBrtx/image-stitching</a>.</li>
+<li>Special thanks to <a href="https://github.com/Robohrriday">@Robohrriday</a> for his immense help during various stages of execution of this assignment.</li>
+</ul>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Given a set of <span class="math inline">\(N\)</span> images <span class="math inline">\(I_1, I_2, \ldots, I_N\)</span> with some overlap of the actual 3-D scene, taken from a static camera with only a rotational degree of freedom, the objective is to warp and stitch the images to form a <strong>Panoramic-Stitched Image</strong>.</p>
+<img src="./images/Result.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+A Panoramic-Stitched Image.
+</p>
+</section>
+<section id="homography-estimation" class="level1">
+<h1>Homography Estimation</h1>
+<section id="scale-invariant-feature-transform-sift" class="level3">
+<h3 class="anchored" data-anchor-id="scale-invariant-feature-transform-sift">Scale-Invariant Feature Transform (SIFT)</h3>
+<p>The SIFT algorithm <span class="citation" data-cites="SIFTarticle"><a href="#ref-SIFTarticle" role="doc-biblioref">[1]</a></span> is one of the commonly used algorithms developed for the purpose of interest point detection and description. It detects keypoints in an image that are scale/shift-invariant and provides a 128-dimension feature description for each of the keypoints detected in an image. A variant of this algorithm is implemented in <a href="https://opencv.org/">OpenCV</a> as <code>cv2.SIFT_create()</code></p>
+<center>
+<img src="./images/SIFT.png" class="img-fluid" style="width:60.0%">
+</center>
+<p style="text-align: center; color: #5f9ea0;">
+SIFT-detected Keypoints.
+</p>
+</section>
+<section id="finding-the-point-correspondances" class="level3">
+<h3 class="anchored" data-anchor-id="finding-the-point-correspondances">Finding the Point Correspondances</h3>
+<p>Now given the SIFT keypoints in two images, we need to find the matching keypoints in both the images i.e.&nbsp;to compare every 128-dimension feature vector of one image with every other feature vector of the other image to find the closest match. This is usually done with the help of some approximate KNN algorithm (KD Tree here).</p>
+<p>Code for SIFT feature detection and Matching:</p>
+<div id="3506159f" class="cell" data-execution_count="1">
+<details open="" class="code-fold">
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> detect_and_match_features(img1, img2):</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    sift <span class="op">=</span> cv2.SIFT_create()</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    keypoints1, descriptors1 <span class="op">=</span> sift.detectAndCompute(img1, <span class="va">None</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    keypoints2, descriptors2 <span class="op">=</span> sift.detectAndCompute(img2, <span class="va">None</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    FLANN_INDEX_KDTREE <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    index_params <span class="op">=</span> <span class="bu">dict</span>(algorithm<span class="op">=</span>FLANN_INDEX_KDTREE, trees<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    search_params <span class="op">=</span> <span class="bu">dict</span>(checks<span class="op">=</span><span class="dv">50</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    flann <span class="op">=</span> cv2.FlannBasedMatcher(index_params, search_params)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    matches <span class="op">=</span> flann.knnMatch(descriptors1, descriptors2, k<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    good_matches <span class="op">=</span> []</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> m, n <span class="kw">in</span> matches:</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> m.distance <span class="op">&lt;</span> <span class="fl">0.75</span> <span class="op">*</span> n.distance:</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>            good_matches.append(m)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    points1 <span class="op">=</span> np.zeros((<span class="bu">len</span>(good_matches), <span class="dv">2</span>), dtype<span class="op">=</span>np.float32)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    points2 <span class="op">=</span> np.zeros((<span class="bu">len</span>(good_matches), <span class="dv">2</span>), dtype<span class="op">=</span>np.float32)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, match <span class="kw">in</span> <span class="bu">enumerate</span>(good_matches):</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>        points1[i, :] <span class="op">=</span> keypoints1[match.queryIdx].pt</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>        points2[i, :] <span class="op">=</span> keypoints2[match.trainIdx].pt</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> points1, points2, keypoints1, keypoints2, good_matches</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<center>
+<img src="./images/Match.png" class="img-fluid" style="width:85.0%">
+</center>
+<p style="text-align: center; color: #5f9ea0;">
+Feature Matching in two Images.
+</p>
+</section>
+<section id="robust-estimation-of-homography-matrix-ransac" class="level2">
+<h2 class="anchored" data-anchor-id="robust-estimation-of-homography-matrix-ransac">Robust Estimation of Homography Matrix (RANSAC)</h2>
+<p>A <strong>homography matrix</strong> <span class="math inline">\(H\)</span> is a <span class="math inline">\(3 \times 3\)</span> matrix that relates corresponding points between two images in projective space <span class="math inline">\(\mathbb{P}^2\)</span>. Given a point <span class="math inline">\(\mathbf{x} = [x, y, 1]^T\)</span> in one image, its corresponding point <span class="math inline">\(\mathbf{x}' = [x', y', 1]^T\)</span> in the second image can be expressed as: <span class="math display">\[
+\mathbf{x}' \sim H \mathbf{x},
+\]</span></p>
+<p>where <span class="math inline">\(\sim\)</span> indicates equality up to a scale factor.</p>
+<p>The homography matrix <span class="math inline">\(H\)</span> has <strong>8 degrees of freedom (DOF)</strong> hence <strong>atleast 4 point correspondances</strong> are needed (as 1 point correspondance gives 2 equations), as it has 9 entries but is defined up to a scale factor. It is generally represented as:</p>
+<p><span class="math display">\[
+H =
+\begin{bmatrix}
+h_{11} &amp; h_{12} &amp; h_{13} \\
+h_{21} &amp; h_{22} &amp; h_{23} \\
+h_{31} &amp; h_{32} &amp; h_{33}
+\end{bmatrix},
+\]</span></p>
+<p>where one of the entries is fixed (e.g., <span class="math inline">\(h_{33} = 1\)</span>) to remove the scale ambiguity.</p>
+<p>The estimation of the homography matrix involves solving a linear system of equations derived from point correspondences. For a pair of corresponding points <span class="math inline">\((x, y)\)</span> and <span class="math inline">\((x', y')\)</span>, the following two equations are obtained: <span class="math display">\[
+x' = \frac{h_{11}x + h_{12}y + h_{13}}{h_{31}x + h_{32}y + h_{33}}, \quad y' = \frac{h_{21}x + h_{22}y + h_{23}}{h_{31}x + h_{32}y + h_{33}}.
+\]</span></p>
+<p>Rewriting these equations in matrix form, they contribute two rows to the system <span class="math inline">\(A \mathbf{h} = 0\)</span>, where <span class="math inline">\(\mathbf{h}\)</span> is the vectorized homography matrix. The homography is obtained by solving this system using singular value decomposition (SVD).</p>
+<p>The provided code implements a RANSAC-based algorithm to estimate the homography matrix robustly in the presence of outliers. The steps are as follows:</p>
+<ul>
+<li>Randomly select 4 point correspondences to compute a candidate homography <span class="math inline">\(H\)</span> using the <span class="math inline">\(\texttt{compute\_homography}\)</span> function.</li>
+<li>Transform all points from the first image using <span class="math inline">\(H\)</span> and compute the reprojection error with respect to the second image points.</li>
+<li>Identify inliers as points with a reprojection error below a given threshold.</li>
+<li>Repeat the process for a fixed number of iterations, retaining the homography with the largest number of inliers.</li>
+<li>Recompute <span class="math inline">\(H\)</span> using all inliers for the final estimate.</li>
+</ul>
+<p>Code for Homography estimation using RANSAC</p>
+<div id="a55948f5" class="cell" data-execution_count="2">
+<details open="" class="code-fold">
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> compute_homography(pts1, pts2):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    A <span class="op">=</span> []</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(pts1)):</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        x, y <span class="op">=</span> pts1[i][<span class="dv">0</span>], pts1[i][<span class="dv">1</span>]</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        x_prime, y_prime <span class="op">=</span> pts2[i][<span class="dv">0</span>], pts2[i][<span class="dv">1</span>]</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        A.append([<span class="op">-</span>x, <span class="op">-</span>y, <span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, x <span class="op">*</span> x_prime, y <span class="op">*</span> x_prime, x_prime])</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        A.append([<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="op">-</span>x, <span class="op">-</span>y, <span class="op">-</span><span class="dv">1</span>, x <span class="op">*</span> y_prime, y <span class="op">*</span> y_prime, y_prime])</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    A <span class="op">=</span> np.array(A)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    _, _, Vt <span class="op">=</span> np.linalg.svd(A)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    H <span class="op">=</span> Vt[<span class="op">-</span><span class="dv">1</span>].reshape(<span class="dv">3</span>, <span class="dv">3</span>)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> H <span class="op">/</span> H[<span class="dv">2</span>, <span class="dv">2</span>]</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> compute_homography_ransac(points1, points2, iterations<span class="op">=</span><span class="dv">1000</span>, threshold<span class="op">=</span><span class="fl">5.0</span>):</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    max_inliers <span class="op">=</span> []</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    points1_h <span class="op">=</span> np.hstack([points1, np.ones((points1.shape[<span class="dv">0</span>], <span class="dv">1</span>))])</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    points2_h <span class="op">=</span> np.hstack([points2, np.ones((points2.shape[<span class="dv">0</span>], <span class="dv">1</span>))])</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(iterations):</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        idxs <span class="op">=</span> np.random.choice(<span class="bu">len</span>(points1), <span class="dv">4</span>, replace<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        pts1_sample <span class="op">=</span> points1[idxs]</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        pts2_sample <span class="op">=</span> points2[idxs]</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>        H <span class="op">=</span> compute_homography(pts1_sample, pts2_sample)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>        projected_points <span class="op">=</span> (H <span class="op">@</span> points1_h.T).T</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>        projected_points <span class="op">/=</span> projected_points[:, <span class="dv">2</span>:<span class="dv">3</span>]</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        distances <span class="op">=</span> np.linalg.norm(points2_h[:, :<span class="dv">2</span>] <span class="op">-</span> projected_points[:, :<span class="dv">2</span>], axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>        inliers <span class="op">=</span> np.where(distances <span class="op">&lt;</span> threshold)[<span class="dv">0</span>]</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="bu">len</span>(inliers) <span class="op">&gt;</span> <span class="bu">len</span>(max_inliers):</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>            max_inliers <span class="op">=</span> inliers</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    inlier_pts1 <span class="op">=</span> points1[max_inliers]</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>    inlier_pts2 <span class="op">=</span> points2[max_inliers]</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    best_H <span class="op">=</span> compute_homography(inlier_pts1, inlier_pts2)</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> best_H, <span class="bu">len</span>(max_inliers)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+</section>
+<section id="the-naive-approach-theoretically-correct" class="level1">
+<h1>The Naive Approach <em>[Theoretically Correct]</em></h1>
+<p>Source: <a href="https://youtube.com/playlist?list=PL2zRqk16wsdp8KbDfHKvPYNGF2L-zQASc&amp;si=XrWXLeeuW42d67UD">First Principles of Computer Vision Channel by Shree K. Nayar</a></p>
+<center>
+<img src="./images/Ref.png" class="img-fluid" style="width:80.0%">
+</center>
+<p style="text-align: center; color: #5f9ea0;">
+Computing Homographies of all images with respect tot the reference image.
+</p>
+<p>To create a seamless panorama, the algorithm selects a <strong>reference image</strong> <span class="math inline">\(I_r\)</span> around which all other images are aligned. The choice of the reference image depends on the total number of images <span class="math inline">\(n\)</span>: <span class="math display">\[
+r =
+\begin{cases}
+\frac{n}{2} - 1 &amp; \text{if } n \text{ is even,} \\
+\left\lfloor \frac{n}{2} \right\rfloor &amp; \text{if } n \text{ is odd.}
+\end{cases}
+\]</span></p>
+<p>For a set of images <span class="math inline">\(\{I_0, I_1, \ldots, I_{n-1}\}\)</span>, the goal is to compute the homography of every image <span class="math inline">\(I_i\)</span> with respect to <span class="math inline">\(I_r\)</span>, denoted as <span class="math inline">\(H_{ri}\)</span>. Since non-consecutive images may not have sufficient overlap, the algorithm leverages the following principle:</p>
+<ul>
+<li><p>Compute consecutive homographies <span class="math inline">\(H_{i, i+1}\)</span>, representing the transformation from image <span class="math inline">\(I_i\)</span> to <span class="math inline">\(I_{i+1}\)</span>.</p></li>
+<li><p>For images to the left of the reference, the homography <span class="math inline">\(H_{ri}\)</span> is computed by chaining transformations: <span class="math display">\[
+  H_{ri} = H_{r, r-1} H_{r-1, r-2} \cdots H_{i+1, i}.
+  \]</span></p></li>
+<li><p>For images to the right of the reference, the homography is computed similarly: <span class="math display">\[
+  H_{ri} = H_{r, r+1} H_{r+1, r+2} \cdots H_{i-1, i}.
+  \]</span></p></li>
+</ul>
+<section id="canvas-size-calculation" class="level3">
+<h3 class="anchored" data-anchor-id="canvas-size-calculation">Canvas Size Calculation</h3>
+<p>Once all the homographies <span class="math inline">\(H_{ri}\)</span> are computed, the transformed corners of each image are calculated using the homographies. Let the corners of an image <span class="math inline">\(I_i\)</span> be represented in homogeneous coordinates as: <span class="math display">\[
+\mathbf{c}_i =
+\begin{bmatrix}
+0 &amp; 0 &amp; 1 \\
+0 &amp; h_i - 1 &amp; 1 \\
+w_i - 1 &amp; h_i - 1 &amp; 1 \\
+w_i - 1 &amp; 0 &amp; 1
+\end{bmatrix}^T,
+\]</span></p>
+<p>where <span class="math inline">\(w_i\)</span> and <span class="math inline">\(h_i\)</span> are the width and height of <span class="math inline">\(I_i\)</span>, respectively.</p>
+<p>The transformed corners are given by: <span class="math display">\[
+\mathbf{c}_i' = H_{ri} \mathbf{c}_i.
+\]</span></p>
+<p>Since the transformed corners <span class="math inline">\(\mathbf{c}_i'\)</span> are also in homogeneous coordinates, they are converted back to Cartesian coordinates by normalizing with the third component: <span class="math display">\[
+\mathbf{c}_i' =
+\begin{bmatrix}
+\frac{x'}{z'} &amp; \frac{y'}{z'}
+\end{bmatrix},
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{c}_i' = [x', y', z']^T\)</span>.</p>
+<p>From the transformed corners of all images, the global bounds of the panorama are determined: <span class="math display">\[
+\texttt{min\_x} = \min_i (\mathbf{c}_i'[:, 0]), \quad
+\texttt{max\_x} = \max_i (\mathbf{c}_i'[:, 0]),
+\]</span> <span class="math display">\[
+\texttt{min\_y} = \min_i (\mathbf{c}_i'[:, 1]), \quad
+\texttt{max\_y} = \max_i (\mathbf{c}_i'[:, 1]).
+\]</span> The final canvas size is then computed as: <span class="math display">\[
+\texttt{width} = \texttt{max\_x} - \texttt{min\_x}, \quad
+\texttt{height} = \texttt{max\_y} - \texttt{min\_y}.
+\]</span></p>
+</section>
+<section id="image-warping-and-final-stitching" class="level3">
+<h3 class="anchored" data-anchor-id="image-warping-and-final-stitching">Image Warping and Final Stitching</h3>
+<p>To align all images within the same canvas, a <strong>shift matrix</strong> is applied to adjust for the minimum <span class="math inline">\(x\)</span> and <span class="math inline">\(y\)</span> coordinates: <span class="math display">\[
+S =
+\begin{bmatrix}
+1 &amp; 0 &amp; -\texttt{min\_x} \\
+0 &amp; 1 &amp; -\texttt{min\_y} \\
+0 &amp; 0 &amp; 1
+\end{bmatrix}.
+\]</span></p>
+<center>
+<img src="./images/Warp.png" class="img-fluid" style="width:80.0%">
+</center>
+<p style="text-align: center; color: #5f9ea0;">
+Warp all images using the homographies wrt reference image.
+</p>
+<p>The final homography for each image <span class="math inline">\(I_i\)</span> with respect to the canvas is: <span class="math display">\[
+H_{i, \text{canvas}} = S H_{ri}.
+\]</span></p>
+<p>Each image is warped onto the canvas using OpenCV’s <span class="math inline">\(\texttt{cv2.warpPerspective}\)</span> function, which performs <strong>inverse mapping</strong>: <span class="math display">\[
+\mathbf{p}_{\text{source}} = H_{i, \text{canvas}}^{-1} \mathbf{p}_{\text{destination}},
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{p}_{\text{destination}}\)</span> represents a pixel in the canvas, and <span class="math inline">\(\mathbf{p}_{\text{source}}\)</span> is the corresponding pixel in the original image. Since <span class="math inline">\(\mathbf{p}_{\text{source}}\)</span> may not lie on integer coordinates, interpolation (e.g., bilinear) is used to compute pixel values.</p>
+</section>
+<section id="final-panorama-composition" class="level3">
+<h3 class="anchored" data-anchor-id="final-panorama-composition">Final Panorama Composition</h3>
+<p>The warped images are combined into a single panorama. Two strategies are used:</p>
+<ul>
+<li><strong>First-over-last blending:</strong> Images are combined in reverse order, with earlier images overwriting the later ones.</li>
+<li><strong>Accumulative blending:</strong> All non-zero pixel values from each warped image are combined sequentially.</li>
+</ul>
+<p>Code for this simple approach:</p>
+<div id="f4116b44" class="cell" data-execution_count="3">
+<details open="" class="code-fold">
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> panorama_stitcher(images, useOpenCV <span class="op">=</span> <span class="va">False</span>, first_over_last <span class="op">=</span> <span class="va">True</span>):</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">        images (List): List of Images to be stitched together</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> <span class="bu">len</span>(images) <span class="op">&gt;=</span> <span class="dv">2</span>, <span class="st">"Number of images should be greater than or equal to 2!"</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># suppose the consecutive homography matrices are H01, H12, H23, H34, H45 and the reference images is I2</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># we need H02, H12, H23, H24, H25 (homographies wrt to the reference image)</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># H02 = H01 * H12, H24 = H23 * H34, H25 = H24 * H45</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    homographies_wrt_reference <span class="op">=</span> [<span class="va">None</span>] <span class="op">*</span> (<span class="bu">len</span>(images) <span class="op">-</span> <span class="dv">1</span>)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="bu">len</span>(images) <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        reference_idx <span class="op">=</span> (<span class="bu">len</span>(images) <span class="op">//</span> <span class="dv">2</span>) <span class="op">-</span> <span class="dv">1</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        reference_idx <span class="op">=</span> <span class="bu">len</span>(images) <span class="op">//</span> <span class="dv">2</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(reference_idx)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Homographies of Consecutive Images</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    homographies <span class="op">=</span> []</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, reference_idx <span class="op">+</span> <span class="dv">1</span>):</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>        H <span class="op">=</span> estimate_homography(images[i <span class="op">-</span> <span class="dv">1</span>], images[i], useOpenCV)</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>        homographies.append(H)</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(reference_idx, <span class="bu">len</span>(images) <span class="op">-</span> <span class="dv">1</span>):</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>        H <span class="op">=</span> estimate_homography(images[i <span class="op">+</span> <span class="dv">1</span>], images[i], useOpenCV)</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>        homographies.append(H)</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    <span class="co"># print(homographies)</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>    homographies_wrt_reference[reference_idx] <span class="op">=</span> homographies[reference_idx]</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> reference_idx <span class="op">&gt;=</span> <span class="dv">1</span>:</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>        homographies_wrt_reference[reference_idx <span class="op">-</span> <span class="dv">1</span>] <span class="op">=</span> homographies[reference_idx <span class="op">-</span> <span class="dv">1</span>]</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>    <span class="co"># print(homographies_wrt_reference)</span></span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(reference_idx <span class="op">-</span> <span class="dv">2</span>, <span class="op">-</span><span class="dv">1</span>, <span class="op">-</span><span class="dv">1</span>):</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>        homographies_wrt_reference[i] <span class="op">=</span> np.dot(homographies[i], homographies_wrt_reference[i <span class="op">+</span> <span class="dv">1</span>])</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(reference_idx <span class="op">+</span> <span class="dv">1</span>, <span class="bu">len</span>(images) <span class="op">-</span> <span class="dv">1</span>):</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>        homographies_wrt_reference[i] <span class="op">=</span> np.dot(homographies_wrt_reference[i <span class="op">-</span> <span class="dv">1</span>], homographies[i])</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>    <span class="co"># homographies_wrt_reference = [H02, H12, H23, H24, H25] same as the indices of images by inserting a None at the reference index</span></span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>    homographies_wrt_reference.insert(reference_idx, <span class="va">None</span>)</span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>    <span class="co"># now homographies_wrt_reference = [H02, H12, None, H23, H24, H25]</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>    <span class="co"># print(homographies_wrt_reference)</span></span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>    <span class="co"># computing the transformed corners of all the images</span></span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>    min_xs, max_xs, min_ys, max_ys <span class="op">=</span> np.inf, <span class="op">-</span>np.inf, np.inf, <span class="op">-</span>np.inf</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(images)):</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> i <span class="op">==</span> reference_idx:</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>            <span class="cf">continue</span></span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>        dest_corners, min_x, min_y, max_x, max_y <span class="op">=</span> transform_corners(images[i], homographies_wrt_reference[i])</span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>        min_xs <span class="op">=</span> <span class="bu">min</span>(min_xs, min_x)</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>        max_xs <span class="op">=</span> <span class="bu">max</span>(max_xs, max_x)</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>        min_ys <span class="op">=</span> <span class="bu">min</span>(min_ys, min_y)</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>        max_ys <span class="op">=</span> <span class="bu">max</span>(max_ys, max_y)</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(dest_corners)</span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(min_x, min_y, max_x, max_y)</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"=============================</span><span class="ch">\n</span><span class="st">"</span>)</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(max_xs, min_xs, max_ys, min_ys)</span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>    <span class="co"># final canvas size</span></span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>    final_canvas_width <span class="op">=</span> <span class="bu">int</span>(max_xs <span class="op">-</span> min_xs)</span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a>    final_canvas_height <span class="op">=</span> <span class="bu">int</span>(max_ys <span class="op">-</span> min_ys)</span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"(Width, Height) = (</span><span class="sc">{</span>final_canvas_width<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span>final_canvas_height<span class="sc">}</span><span class="ss">)"</span>)</span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>    <span class="co"># now we need to shift all the images taking into account the min_x and min_y</span></span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>    shift_matrix <span class="op">=</span> np.array([[<span class="dv">1</span>, <span class="dv">0</span>, <span class="op">-</span>min_xs], [<span class="dv">0</span>, <span class="dv">1</span>, <span class="op">-</span>min_ys], [<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>]])</span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>    final_homographies_wrt_reference <span class="op">=</span> []</span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(images)):</span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> i <span class="op">==</span> reference_idx:</span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a>            final_homographies_wrt_reference.append(shift_matrix)</span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>            final_homographies_wrt_reference.append(np.dot(shift_matrix, homographies_wrt_reference[i]))</span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>    visualize_homography_corners(images, final_homographies_wrt_reference, final_canvas_width, final_canvas_height)</span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>    warped_images <span class="op">=</span> []</span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(images)):</span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>        warped_images.append(cv2.warpPerspective(images[i], final_homographies_wrt_reference[i], (final_canvas_width, final_canvas_height)))</span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>    <span class="co"># plotting individual warped images</span></span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(warped_images)):</span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>        plt.figure(figsize<span class="op">=</span>(<span class="dv">15</span>, <span class="dv">15</span>))</span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>        plt.title(<span class="ss">f"Image </span><span class="sc">{</span>i <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>        plt.imshow(cv2.cvtColor(warped_images[i], cv2.COLOR_BGR2RGB))</span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>        plt.axis(<span class="st">'off'</span>)</span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>        plt.show()</span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> first_over_last:</span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a>        final_image <span class="op">=</span> warped_images[<span class="op">-</span><span class="dv">1</span>].copy()</span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(images) <span class="op">-</span> <span class="dv">2</span>, <span class="op">-</span><span class="dv">1</span>, <span class="op">-</span><span class="dv">1</span>):</span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a>            non_zero_indices <span class="op">=</span> np.nonzero(warped_images[i])</span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a>            final_image[non_zero_indices] <span class="op">=</span> warped_images[i][non_zero_indices]</span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a>        final_image <span class="op">=</span> np.zeros_like(warped_images[<span class="dv">0</span>])</span>
+<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(images)):</span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a>            non_zero_indices <span class="op">=</span> np.nonzero(warped_images[i])</span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a>            final_image[non_zero_indices] <span class="op">=</span> warped_images[i][non_zero_indices]</span>
+<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a>    plt.figure(figsize<span class="op">=</span>(<span class="dv">15</span>, <span class="dv">15</span>))</span>
+<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a>    plt.title(<span class="st">"Final Image"</span>)</span>
+<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a>    plt.imshow(cv2.cvtColor(final_image, cv2.COLOR_BGR2RGB))</span>
+<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a>    plt.axis(<span class="st">'off'</span>)</span>
+<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a>    plt.show()</span>
+<span id="cb3-110"><a href="#cb3-110" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-111"><a href="#cb3-111" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> warped_images</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Output:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">2</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">[[-5008.472</span>     <span class="at">-611.777</span>   ]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a> <span class="ex">[-5937.4375</span>    3009.8218  ]</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a> <span class="bu">[</span> -587.5613    2644.8523  <span class="bu">]</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a> <span class="bu">[</span> -347.63306     26.290306]]</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>-5937.4375 -611.777 <span class="er">-347.63306</span> <span class="ex">3009.8218</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ex">=============================</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">[[-1964.2637</span>   <span class="at">-226.8197</span> ]</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a> <span class="ex">[-2486.629</span>    2658.986  ]</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a> <span class="bu">[</span> 1540.8529   2553.5437 <span class="bu">]</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a> <span class="bu">[</span> 1683.7982     48.38358]]</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>-2486.629 -226.8197 <span class="er">1683.7982</span> <span class="ex">2658.986</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="ex">=============================</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="ex">[[1789.1836</span>     65.615555]</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a> <span class="ex">[1860.5791</span>   2376.226   ]</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a> <span class="ex">[5154.1025</span>   2485.239   ]</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a> <span class="ex">[5083.1216</span>    <span class="at">-43.93821</span> ]]</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="ex">1789.1836</span> <span class="at">-43.93821</span> 5154.1025 2485.239</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="ex">=============================</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="ex">[[3141.279</span>      80.706474]</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a> <span class="ex">[3192.036</span>    2416.6748  ]</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a> <span class="ex">[6938.0474</span>   2743.146   ]</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a> <span class="ex">[6869.2407</span>    <span class="at">-80.182846]]</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="ex">3141.279</span> <span class="at">-80.182846</span> 6938.0474 2743.146</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="ex">=============================</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="kw">[[</span> 4988.6816      29.972841]</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a> [ <span class="er">5091.458</span>     <span class="ex">2548.468</span>   ]</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a> <span class="ex">[10146.665</span>     3168.1335  ]</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a> <span class="bu">[</span> 9960.408     -373.7504  ]]</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="er">4988.6816</span> <span class="er">-373.7504</span> <span class="ex">10146.665</span> 3168.1335</span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="ex">=============================</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a><span class="ex">10146.665</span> <span class="at">-5937.4375</span> 3168.1335 <span class="at">-611.777</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">Width,</span> Height<span class="kw">)</span> <span class="ex">=</span> <span class="er">(</span><span class="ex">16084,</span> 3779<span class="kw">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><img src="./images/1.png" class="img-fluid"> <img src="./images/2.png" class="img-fluid"> <img src="./images/3.png" class="img-fluid"> <img src="./images/4.png" class="img-fluid"> <img src="./images/5.png" class="img-fluid"> <img src="./images/6.png" class="img-fluid"> <img src="./images/7.png" class="img-fluid"> <img src="./images/8.png" class="img-fluid"></p>
+<p>But here’s the catch - this approach works just fine considering the camera is <strong>not translated</strong>. Notice the inherent digital lens problem that cause a <strong>brightness change</strong> for the side edges of the images, indicated by the <strong>crease line</strong> between the images. Further all the <strong>projections are independent</strong> of their neighbouring images and only based on the reference image, hence it may not happen that consecutive images, which had a significant overlap, will actually blend well as seen above. And, the placing of images just above/under - clearly, <strong>overwriting the pixels</strong> of the other image, is not be ideal.</p>
+</section>
+</section>
+<section id="the-robust-approach" class="level1">
+<h1>The Robust Approach</h1>
+<p>Since, we have noticed the theoretically correct approach <strong>does not give seamless blend</strong>, hence we levarage the <strong>good overlap</strong> of consecutive images to enhance the blend. <br> In this approach, we enhance the blending of consecutive images by leveraging a <strong>distance transform-based weighting</strong>. This ensures smooth transitions in overlapping regions, avoiding visible seams and artifacts. Below is the step-by-step methodology.</p>
+<section id="weight-matrix-construction" class="level3">
+<h3 class="anchored" data-anchor-id="weight-matrix-construction">Weight Matrix Construction</h3>
+<p>For a single image, a 2D weight matrix is constructed based on a distance transform. The weights are higher near the center and taper off towards the edges. For an image of size <span class="math inline">\(h \times w\)</span>, the weight matrix is given by:</p>
+<p><span class="math display">\[
+W(i, j) = \frac{d(i, j)}{\max_{i,j} d(i, j)},
+\]</span></p>
+<p>where <span class="math inline">\(d(i, j)\)</span> represents the Euclidean distance from the pixel <span class="math inline">\((i, j)\)</span> to the nearest edge. This is computed using:</p>
+<p><span class="math display">\[
+d(i, j) = \min(\text{dist}(i, 0), \text{dist}(i, h-1), \text{dist}(j, 0), \text{dist}(j, w-1)).
+\]</span></p>
+<p>The weights are then normalized across the entire matrix to ensure smooth blending.</p>
+<center>
+<img src="./images/Im2Dist.png" class="img-fluid" style="width:60.0%">
+</center>
+<p style="text-align: center; color: #5f9ea0;">
+A variant of a simple Distance Transform.
+</p>
+<p>Code for a simple distance transform:</p>
+<div id="80f08d77" class="cell" data-execution_count="4">
+<details open="" class="code-fold">
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> single_weights_array(size: <span class="bu">int</span>) <span class="op">-&gt;</span> np.ndarray:</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Create a 1D weights array.</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">        size: Size of the array</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns:</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co">        weights: 1D weights array</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> size <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">1</span>:</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> np.concatenate(</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>            [np.linspace(<span class="dv">0</span>, <span class="dv">1</span>, (size <span class="op">+</span> <span class="dv">1</span>) <span class="op">//</span> <span class="dv">2</span>), np.linspace(<span class="dv">1</span>, <span class="dv">0</span>, (size <span class="op">+</span> <span class="dv">1</span>) <span class="op">//</span> <span class="dv">2</span>)[<span class="dv">1</span>:]]</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> np.concatenate([np.linspace(<span class="dv">0</span>, <span class="dv">1</span>, size <span class="op">//</span> <span class="dv">2</span>), np.linspace(<span class="dv">1</span>, <span class="dv">0</span>, size <span class="op">//</span> <span class="dv">2</span>)])</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> single_weights_matrix(shape: <span class="bu">tuple</span>[<span class="bu">int</span>]) <span class="op">-&gt;</span> np.ndarray:</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="co">    Create a 2D weights matrix.</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="co">        shape: Shape of the matrix</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns:</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="co">        weights: 2D weights matrix</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>        single_weights_array(shape[<span class="dv">0</span>])[:, np.newaxis]</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>        <span class="op">@</span> single_weights_array(shape[<span class="dv">1</span>])[:, np.newaxis].T</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="blending-consecutive-images" class="level3">
+<h3 class="anchored" data-anchor-id="blending-consecutive-images">Blending Consecutive Images</h3>
+<p>Let <span class="math inline">\(I_1\)</span> and <span class="math inline">\(I_2\)</span> be two consecutive images. Their homography matrix <span class="math inline">\(H_{12}\)</span> is computed such that:</p>
+<p><span class="math display">\[
+H_{12} \mathbf{p}_1 = \mathbf{p}_2,
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{p}_1\)</span> and <span class="math inline">\(\mathbf{p}_2\)</span> are corresponding points in <span class="math inline">\(I_1\)</span> and <span class="math inline">\(I_2\)</span>, respectively.</p>
+</section>
+<section id="steps" class="level3">
+<h3 class="anchored" data-anchor-id="steps">Steps:</h3>
+<ol type="1">
+<li><p><strong>Warping Images</strong>:</p>
+<ul>
+<li>Using the computed homography <span class="math inline">\(H_{12}\)</span>, <span class="math inline">\(I_1\)</span> is warped onto the coordinate space of <span class="math inline">\(I_2\)</span>:</li>
+</ul>
+<p><span class="math display">\[
+I_1' = \text{warp}(I_1, H_{12}),
+\]</span></p>
+<p>where the warp operation involves <strong>inverse mapping</strong> to find the source pixel for each destination pixel and interpolating pixel values.</p>
+<p>Similarly, <span class="math inline">\(I_2\)</span> is translated using a shift matrix <span class="math inline">\(S\)</span> derived from the minimum x and y coordinates of the transformed corners.</p></li>
+<li><p><strong>Warping Weights</strong>:</p>
+<ul>
+<li>The weight matrices for <span class="math inline">\(I_1\)</span> and <span class="math inline">\(I_2\)</span>, denoted as <span class="math inline">\(W_1\)</span> and <span class="math inline">\(W_2\)</span>, are also warped using the same transformations.</li>
+</ul></li>
+<li><p><strong>Blending</strong>:</p>
+<ul>
+<li>The total weight at each pixel is computed as:</li>
+</ul>
+<p><span class="math display">\[
+W_{\text{total}}(i, j) = W_1'(i, j) + W_2'(i, j).
+\]</span></p>
+<ul>
+<li>The normalized weights are:</li>
+</ul>
+<p><span class="math display">\[
+\hat{W}_1'(i, j) = \frac{W_1'(i, j)}{W_{\text{total}}(i, j)}, \quad
+\hat{W}_2'(i, j) = \frac{W_2'(i, j)}{W_{\text{total}}(i, j)}.
+\]</span></p>
+<ul>
+<li>The blended image is then obtained as:</li>
+</ul>
+<p><span class="math display">\[
+I_{\text{blend}}(i, j) = \hat{W}_1'(i, j) I_1'(i, j) + \hat{W}_2'(i, j) I_2'(i, j).
+\]</span></p></li>
+</ol>
+</section>
+<section id="iterative-blending-of-images" class="level3">
+<h3 class="anchored" data-anchor-id="iterative-blending-of-images">Iterative Blending of Images</h3>
+<p>The way we will approach is from both sides - keeping the reference images still as the middle one.</p>
+<ol type="1">
+<li>Start in <strong>Forward Direction (Left to Right)</strong>, take Image1 and Image2. Keeping Image2 as the reference, warp Image1 and translate Image2 so that they overlap.</li>
+</ol>
+<center>
+<img src="./images/Im2Wrp.png" class="img-fluid" style="width:60.0%">
+</center>
+<center>
+<img src="./images/Im1Tr.png" class="img-fluid" style="width:60.0%">
+</center>
+<ol start="2" type="1">
+<li>Compute their distance transforms too and apply the same homography and shift matrices to the respective ones.</li>
+</ol>
+<center>
+<img src="./images/Im2Dist.png" class="img-fluid" style="width:60.0%">
+</center>
+<center>
+<img src="./images/Im1Dist.png" class="img-fluid" style="width:60.0%">
+</center>
+<ol start="3" type="1">
+<li>Blend the two images by adding them with their respective distance transforms.</li>
+</ol>
+<center>
+<img src="./images/Blend.png" class="img-fluid" style="width:60.0%">
+</center>
+<ol start="4" type="1">
+<li>We call this blended image as <span class="math inline">\(\texttt{Image12}\)</span> and we will also add and normalise their <strong>combined ditance transform</strong>.</li>
+</ol>
+<center>
+<img src="./images/DistComb.png" class="img-fluid" style="width:60.0%">
+</center>
+<ol start="5" type="1">
+<li>Likewise we will now take this <span class="math inline">\(\texttt{Image12}\)</span> and <span class="math inline">\(\texttt{Image3}\)</span>, with <span class="math inline">\(\texttt{Image3}\)</span> as the reference. Notice how we will warp the entire blended <span class="math inline">\(\texttt{Image12}\)</span> using the Homography <span class="math inline">\(H_{23}\)</span> between <span class="math inline">\(\texttt{Image2}\)</span> and <span class="math inline">\(\texttt{Image3}\)</span>. Doing the same for their distance transforms too and saving the final distance transform too.</li>
+</ol>
+<center>
+<img src="./images/Im12Wrp.png" class="img-fluid" style="width:60.0%">
+</center>
+<center>
+<img src="./images/Im3.png" class="img-fluid" style="width:60.0%">
+</center>
+<center>
+<img src="./images/Dist3.png" class="img-fluid" style="width:60.0%">
+</center>
+<center>
+<img src="./images/Dist2.png" class="img-fluid" style="width:60.0%">
+</center>
+<center>
+<img src="./images/Blend.png" class="img-fluid" style="width:60.0%">
+</center>
+<center>
+<img src="./images/Dist123.png" class="img-fluid" style="width:60.0%">
+</center>
+<ol start="6" type="1">
+<li>Repeat the same process but in the <strong>Backward Direction (Right to Left)</strong> and reverse order - <span class="math inline">\(\texttt{Image6}\)</span> and <span class="math inline">\(\texttt{Image5}\)</span> <span class="math inline">\(\to\)</span> <span class="math inline">\(\texttt{Image65}\)</span>, and then <span class="math inline">\(\texttt{Image65}\)</span> and <span class="math inline">\(\texttt{Image4}\)</span> <span class="math inline">\(\to\)</span> <span class="math inline">\(\texttt{Image654}\)</span>.</li>
+</ol>
+<center>
+<img src="./images/Combine654.png" class="img-fluid" style="width:70.0%">
+</center>
+<ol type="1">
+<li>Now we need to blend these two sides - the Forward and Backward Segments - again use the Homography <span class="math inline">\(H_{34}\)</span> i.e between <span class="math inline">\(\texttt{Image3}\)</span> and <span class="math inline">\(\texttt{Image4}\)</span> to warp/translate the entire blended segments <span class="math inline">\(\texttt{Image123}\)</span> and <span class="math inline">\(\texttt{Image654}\)</span>.</li>
+</ol>
+<p><img src="./images/FinForward.png" class="img-fluid"> <img src="./images/FinBackward.png" class="img-fluid"> <img src="./images/DistForward.png" class="img-fluid"> <img src="./images/DistBackward.png" class="img-fluid"></p>
+<ol start="8" type="1">
+<li>Finally, we get the seamless image - clearly the <strong>ghosting effect</strong> shows that images we not taken from a perfect rotating camera and there was some translation introduced - further the subjects moved in the meanwhile of taking those pictures.</li>
+</ol>
+<p><img src="./images/Result.png" class="img-fluid"></p>
+</section>
+</section>
+<section id="a-notorius-case---big-panoramas" class="level1">
+<h1>A Notorius Case - <em>Big Panoramas</em></h1>
+<p>Source: <a href="https://www.youtube.com/watch?v=taty6lPVcmA">Ancient Secrets of Computer Vision Channel</a></p>
+<section id="problem-with-planes" class="level3">
+<h3 class="anchored" data-anchor-id="problem-with-planes">Problem with Planes :(</h3>
+<p>Notice that if the images are too wide in their scene, then their <strong>projection onto a plane</strong> will be highly elongated</p>
+<center>
+<img src="./images/Plane.png" class="img-fluid" style="width:60.0%">
+</center>
+<p style="text-align: center; color: #5f9ea0;">
+Problem with Projecting onto a Plane.
+</p>
+<center>
+<img src="./images/Skew1.png" class="img-fluid" style="width:80.0%">
+</center>
+<p style="text-align: center; color: #5f9ea0;">
+Wide Panoramas in action (Visualization).
+</p>
+<center>
+<img src="./images/skew2.png" class="img-fluid" style="width:80.0%">
+</center>
+<p style="text-align: center; color: #5f9ea0;">
+Wide Panoramas in action.
+</p>
+</section>
+<section id="use-cylinders" class="level3">
+<h3 class="anchored" data-anchor-id="use-cylinders">Use Cylinders!</h3>
+<p>Rather than a flat plane - the idea is to <strong>project the images onto a cylinder</strong> so that the span of each image is roughly the same</p>
+<center>
+<img src="./images/Cylinder.png" class="img-fluid" style="width:60.0%">
+</center>
+<p style="text-align: center; color: #5f9ea0;">
+Projecting onto a cylindrical surface ensures all projections of similar span.
+</p>
+<center>
+<img src="./images/CylinderProject.png" class="img-fluid" style="width:60.0%">
+</center>
+<p style="text-align: center; color: #5f9ea0;">
+Cylindrical Projection.
+</p>
+<div id="51fc9544" class="cell" data-execution_count="5">
+<details open="" class="code-fold">
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> cylindrical_warp(image, focal_length):</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    h, w <span class="op">=</span> image.shape[:<span class="dv">2</span>]</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    x_c, y_c <span class="op">=</span> w <span class="op">//</span> <span class="dv">2</span>, h <span class="op">//</span> <span class="dv">2</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    u, v <span class="op">=</span> np.meshgrid(np.arange(w), np.arange(h))</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    theta <span class="op">=</span> (u <span class="op">-</span> x_c) <span class="op">/</span> focal_length</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    h_cyl <span class="op">=</span> (v <span class="op">-</span> y_c) <span class="op">/</span> focal_length</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    x_hat <span class="op">=</span> np.sin(theta)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    y_hat <span class="op">=</span> h_cyl</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    z_hat <span class="op">=</span> np.cos(theta)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    x_img <span class="op">=</span> (focal_length <span class="op">*</span> x_hat <span class="op">/</span> z_hat <span class="op">+</span> x_c).astype(np.int32)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    y_img <span class="op">=</span> (focal_length <span class="op">*</span> y_hat <span class="op">/</span> z_hat <span class="op">+</span> y_c).astype(np.int32)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    valid_mask <span class="op">=</span> (x_img <span class="op">&gt;=</span> <span class="dv">0</span>) <span class="op">&amp;</span> (x_img <span class="op">&lt;</span> w) <span class="op">&amp;</span> (y_img <span class="op">&gt;=</span> <span class="dv">0</span>) <span class="op">&amp;</span> (y_img <span class="op">&lt;</span> h)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    cylindrical_img <span class="op">=</span> np.zeros_like(image)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    cylindrical_img[v[valid_mask], u[valid_mask]] <span class="op">=</span> image[y_img[valid_mask], x_img[valid_mask]]</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    cylindrical_img <span class="op">=</span> Image.fromarray(cylindrical_img)</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    cylindrical_img <span class="op">=</span> cylindrical_img.crop((u[valid_mask].<span class="bu">min</span>(), v[valid_mask].<span class="bu">min</span>(), u[valid_mask].<span class="bu">max</span>(), v[valid_mask].<span class="bu">max</span>()))</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>    cylindrical_img <span class="op">=</span> np.array(cylindrical_img)</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> cylindrical_img</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<img src="./images/Cyl1.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+Image Projections with f = 400.
+</p>
+<img src="./images/Cyl2.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+Image Projections with f = 800.
+</p>
+<p>All you now need to do is this pre-processing before our usual algorithm. Note that all panoramic set of images <strong>might not require cylindrical warping</strong>. There are ways in which OpenCV’s implementation handles the calculation of <strong>focal length</strong> (and that too estimating the <strong>pixel density</strong> since actual focal length is in <strong>mm</strong> and not <strong>pixels</strong>). For this implementation, I had <strong>heuristically figured</strong> out the focal length (although you can look at the image properties in your file manager - that might reveal the camera details that took that picture) and that too only for two set of panoramic images - rest worked just fine without it.</p>
+<img src="./images/Result2.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+Final Panoramic stitching using f = 800.
+</p>
+<img src="./images/Result3.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+Final Panoramic stitching using f = 800.
+</p>
+</section>
+</section>
+<section id="final-results" class="level1">
+<h1>Final Results</h1>
+<img src="./images/Result.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+Panorama 1.
+</p>
+<img src="./images/Result2.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+Panorama 2 with f = 800.
+</p>
+<img src="./images/Result3.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+Panorama 3 with f = 800.
+</p>
+<img src="./images/Result4.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+Panorama 4.
+</p>
+<img src="./images/Result5.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+Panorama 5.
+</p>
+<img src="./images/Result6.png" class="img-fluid">
+<p style="text-align: center; color: #5f9ea0;">
+Panorama 6.
+</p>
+<p>Hope you had a great time learning and have an even time implementing it on your own!</p>
+
+
+
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body" data-entry-spacing="0" role="list">
+<div id="ref-SIFTarticle" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[1] </div><div class="csl-right-inline">D. Lowe, <span>“Distinctive image features from scale-invariant keypoints,”</span> <em>International Journal of Computer Vision</em>, vol. 60, pp. 91–, Nov. 2004, doi: <a href="https://doi.org/10.1023/B:VISI.0000029664.99615.94">10.1023/B:VISI.0000029664.99615.94</a>.</div>
+</div>
+</div></section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Website made with <a href="https://quarto.org/">Quarto</a>, by Guntas Singh Saran.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/guntas-13/">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://www.instagram.com/guntas.saran13/">
+      <i class="bi bi-instagram" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/guntas-singh-saran-2b8811179/">
+      <i class="bi bi-linkedin" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="mailto:guntassingh.saran@iitgn.ac.in">
+      <i class="bi bi-envelope" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+<script src="../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
