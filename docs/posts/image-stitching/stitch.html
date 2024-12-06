@@ -288,7 +288,7 @@ SIFT-detected Keypoints.
 <h3 class="anchored" data-anchor-id="finding-the-point-correspondances">Finding the Point Correspondances</h3>
 <p>Now given the SIFT keypoints in two images, we need to find the matching keypoints in both the images i.e.&nbsp;to compare every 128-dimension feature vector of one image with every other feature vector of the other image to find the closest match. This is usually done with the help of some approximate KNN algorithm (KD Tree here).</p>
 <p>Code for SIFT feature detection and Matching:</p>
-<div id="3506159f" class="cell" data-execution_count="1">
+<div id="f0013e91" class="cell" data-execution_count="1">
 <details open="" class="code-fold">
 <summary>Show the code</summary>
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> detect_and_match_features(img1, img2):</span>
@@ -355,7 +355,7 @@ x' = \frac{h_{11}x + h_{12}y + h_{13}}{h_{31}x + h_{32}y + h_{33}}, \quad y' = \
 <li>Recompute <span class="math inline">\(H\)</span> using all inliers for the final estimate.</li>
 </ul>
 <p>Code for Homography estimation using RANSAC</p>
-<div id="a55948f5" class="cell" data-execution_count="2">
+<div id="1aba3cd0" class="cell" data-execution_count="2">
 <details open="" class="code-fold">
 <summary>Show the code</summary>
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> compute_homography(pts1, pts2):</span>
@@ -491,7 +491,7 @@ H_{i, \text{canvas}} = S H_{ri}.
 <li><strong>Accumulative blending:</strong> All non-zero pixel values from each warped image are combined sequentially.</li>
 </ul>
 <p>Code for this simple approach:</p>
-<div id="f4116b44" class="cell" data-execution_count="3">
+<div id="77d33e8e" class="cell" data-execution_count="3">
 <details open="" class="code-fold">
 <summary>Show the code</summary>
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> panorama_stitcher(images, useOpenCV <span class="op">=</span> <span class="va">False</span>, first_over_last <span class="op">=</span> <span class="va">True</span>):</span>
@@ -608,46 +608,51 @@ H_{i, \text{canvas}} = S H_{ri}.
 </details>
 </div>
 <p>Output:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">2</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">[[-5008.472</span>     <span class="at">-611.777</span>   ]</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a> <span class="ex">[-5937.4375</span>    3009.8218  ]</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a> <span class="bu">[</span> -587.5613    2644.8523  <span class="bu">]</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a> <span class="bu">[</span> -347.63306     26.290306]]</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>-5937.4375 -611.777 <span class="er">-347.63306</span> <span class="ex">3009.8218</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ex">=============================</span></span>
+<div id="6d17e7ea" class="cell" data-execution_count="4">
+<details open="" class="code-fold">
+<summary>Show the output</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 2</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># [[-5008.472     -611.777   ]</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">#  [-5937.4375    3009.8218  ]</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">#  [ -587.5613    2644.8523  ]</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">#  [ -347.63306     26.290306]]</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># -5937.4375 -611.777 -347.63306 3009.8218</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># =============================</span></span>
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">[[-1964.2637</span>   <span class="at">-226.8197</span> ]</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a> <span class="ex">[-2486.629</span>    2658.986  ]</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a> <span class="bu">[</span> 1540.8529   2553.5437 <span class="bu">]</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a> <span class="bu">[</span> 1683.7982     48.38358]]</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>-2486.629 -226.8197 <span class="er">1683.7982</span> <span class="ex">2658.986</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="ex">=============================</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># [[-1964.2637   -226.8197 ]</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co">#  [-2486.629    2658.986  ]</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co">#  [ 1540.8529   2553.5437 ]</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">#  [ 1683.7982     48.38358]]</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co"># -2486.629 -226.8197 1683.7982 2658.986</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co"># =============================</span></span>
 <span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="ex">[[1789.1836</span>     65.615555]</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a> <span class="ex">[1860.5791</span>   2376.226   ]</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a> <span class="ex">[5154.1025</span>   2485.239   ]</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a> <span class="ex">[5083.1216</span>    <span class="at">-43.93821</span> ]]</span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="ex">1789.1836</span> <span class="at">-43.93821</span> 5154.1025 2485.239</span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="ex">=============================</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># [[1789.1836     65.615555]</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="co">#  [1860.5791   2376.226   ]</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co">#  [5154.1025   2485.239   ]</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="co">#  [5083.1216    -43.93821 ]]</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co"># 1789.1836 -43.93821 5154.1025 2485.239</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="co"># =============================</span></span>
 <span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="ex">[[3141.279</span>      80.706474]</span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a> <span class="ex">[3192.036</span>    2416.6748  ]</span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a> <span class="ex">[6938.0474</span>   2743.146   ]</span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a> <span class="ex">[6869.2407</span>    <span class="at">-80.182846]]</span></span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="ex">3141.279</span> <span class="at">-80.182846</span> 6938.0474 2743.146</span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="ex">=============================</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="co"># [[3141.279      80.706474]</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="co">#  [3192.036    2416.6748  ]</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="co">#  [6938.0474   2743.146   ]</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="co">#  [6869.2407    -80.182846]]</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="co"># 3141.279 -80.182846 6938.0474 2743.146</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="co"># =============================</span></span>
 <span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="kw">[[</span> 4988.6816      29.972841]</span>
-<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a> [ <span class="er">5091.458</span>     <span class="ex">2548.468</span>   ]</span>
-<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a> <span class="ex">[10146.665</span>     3168.1335  ]</span>
-<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a> <span class="bu">[</span> 9960.408     -373.7504  ]]</span>
-<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="er">4988.6816</span> <span class="er">-373.7504</span> <span class="ex">10146.665</span> 3168.1335</span>
-<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="ex">=============================</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="co"># [[ 4988.6816      29.972841]</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a><span class="co">#  [ 5091.458     2548.468   ]</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a><span class="co">#  [10146.665     3168.1335  ]</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a><span class="co">#  [ 9960.408     -373.7504  ]]</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="co"># 4988.6816 -373.7504 10146.665 3168.1335</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="co"># =============================</span></span>
 <span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a><span class="ex">10146.665</span> <span class="at">-5937.4375</span> 3168.1335 <span class="at">-611.777</span></span>
-<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">Width,</span> Height<span class="kw">)</span> <span class="ex">=</span> <span class="er">(</span><span class="ex">16084,</span> 3779<span class="kw">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a><span class="co"># 10146.665 -5937.4375 3168.1335 -611.777</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a><span class="co"># (Width, Height) = (16084, 3779)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
 <p><img src="./images/1.png" class="img-fluid"> <img src="./images/2.png" class="img-fluid"> <img src="./images/3.png" class="img-fluid"> <img src="./images/4.png" class="img-fluid"> <img src="./images/5.png" class="img-fluid"> <img src="./images/6.png" class="img-fluid"> <img src="./images/7.png" class="img-fluid"> <img src="./images/8.png" class="img-fluid"></p>
-<p>But here’s the catch - this approach works just fine considering the camera is <strong>not translated</strong>. Notice the inherent digital lens problem that cause a <strong>brightness change</strong> for the side edges of the images, indicated by the <strong>crease line</strong> between the images. Further all the <strong>projections are independent</strong> of their neighbouring images and only based on the reference image, hence it may not happen that consecutive images, which had a significant overlap, will actually blend well as seen above. And, the placing of images just above/under - clearly, <strong>overwriting the pixels</strong> of the other image, is not be ideal.</p>
+<p>But here’s the catch - this approach works just fine considering the camera is <strong>not translated</strong>. Notice the inherent digital lens problem that cause a <strong>brightness change</strong> for the side edges of the images, indicated by the <strong>crease line</strong> between the images. Further all the <strong>projections are independent</strong> of their neighbouring images and only based on the reference image, hence it may not happen that consecutive images, which had a significant overlap, will actually blend well, as seen above. And, the placing of images just above/under - clearly, <strong>overwriting the pixels</strong> of the other image, is not ideal.</p>
 </section>
 </section>
 <section id="the-robust-approach" class="level1">
@@ -671,7 +676,7 @@ d(i, j) = \min(\text{dist}(i, 0), \text{dist}(i, h-1), \text{dist}(j, 0), \text{
 A variant of a simple Distance Transform.
 </p>
 <p>Code for a simple distance transform:</p>
-<div id="80f08d77" class="cell" data-execution_count="4">
+<div id="c246309e" class="cell" data-execution_count="5">
 <details open="" class="code-fold">
 <summary>Show the code</summary>
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
@@ -806,12 +811,12 @@ I_{\text{blend}}(i, j) = \hat{W}_1'(i, j) I_1'(i, j) + \hat{W}_2'(i, j) I_2'(i, 
 <img src="./images/Dist2.png" class="img-fluid" style="width:60.0%">
 </center>
 <center>
-<img src="./images/Blend.png" class="img-fluid" style="width:60.0%">
+<img src="./images/CombineAll.png" class="img-fluid" style="width:60.0%">
 </center>
 <center>
 <img src="./images/Dist123.png" class="img-fluid" style="width:60.0%">
 </center>
-<ol start="6" type="1">
+<ol type="1">
 <li>Repeat the same process but in the <strong>Backward Direction (Right to Left)</strong> and reverse order - <span class="math inline">\(\texttt{Image6}\)</span> and <span class="math inline">\(\texttt{Image5}\)</span> <span class="math inline">\(\to\)</span> <span class="math inline">\(\texttt{Image65}\)</span>, and then <span class="math inline">\(\texttt{Image65}\)</span> and <span class="math inline">\(\texttt{Image4}\)</span> <span class="math inline">\(\to\)</span> <span class="math inline">\(\texttt{Image654}\)</span>.</li>
 </ol>
 <center>
@@ -822,7 +827,7 @@ I_{\text{blend}}(i, j) = \hat{W}_1'(i, j) I_1'(i, j) + \hat{W}_2'(i, j) I_2'(i, 
 </ol>
 <p><img src="./images/FinForward.png" class="img-fluid"> <img src="./images/FinBackward.png" class="img-fluid"> <img src="./images/DistForward.png" class="img-fluid"> <img src="./images/DistBackward.png" class="img-fluid"></p>
 <ol start="8" type="1">
-<li>Finally, we get the seamless image - clearly the <strong>ghosting effect</strong> shows that images we not taken from a perfect rotating camera and there was some translation introduced - further the subjects moved in the meanwhile of taking those pictures.</li>
+<li>Finally, we get the seamless image - clearly the <strong>ghosting effect</strong> shows that images were <strong>actually not taken from a perfect rotating camera</strong> and there was <strong>some translation</strong> introduced - further the <strong>subjects moved</strong> in the meanwhile of taking those pictures hence we simply shouldn’t overwrite one or the other.</li>
 </ol>
 <p><img src="./images/Result.png" class="img-fluid"></p>
 </section>
@@ -867,7 +872,7 @@ Projecting onto a cylindrical surface ensures all projections of similar span.
 <p style="text-align: center; color: #5f9ea0;">
 Cylindrical Projection.
 </p>
-<div id="51fc9544" class="cell" data-execution_count="5">
+<div id="96fcd33b" class="cell" data-execution_count="6">
 <details open="" class="code-fold">
 <summary>Show the code</summary>
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> cylindrical_warp(image, focal_length):</span>

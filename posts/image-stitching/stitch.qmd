@@ -379,45 +379,47 @@ def panorama_stitcher(images, useOpenCV = False, first_over_last = True):
     return warped_images
 ```
 Output:
-```bash
-2
-[[-5008.472     -611.777   ]
- [-5937.4375    3009.8218  ]
- [ -587.5613    2644.8523  ]
- [ -347.63306     26.290306]]
--5937.4375 -611.777 -347.63306 3009.8218
-=============================
+```{python}
+#| code-summary: "Show the output"
 
-[[-1964.2637   -226.8197 ]
- [-2486.629    2658.986  ]
- [ 1540.8529   2553.5437 ]
- [ 1683.7982     48.38358]]
--2486.629 -226.8197 1683.7982 2658.986
-=============================
+# 2
+# [[-5008.472     -611.777   ]
+#  [-5937.4375    3009.8218  ]
+#  [ -587.5613    2644.8523  ]
+#  [ -347.63306     26.290306]]
+# -5937.4375 -611.777 -347.63306 3009.8218
+# =============================
 
-[[1789.1836     65.615555]
- [1860.5791   2376.226   ]
- [5154.1025   2485.239   ]
- [5083.1216    -43.93821 ]]
-1789.1836 -43.93821 5154.1025 2485.239
-=============================
+# [[-1964.2637   -226.8197 ]
+#  [-2486.629    2658.986  ]
+#  [ 1540.8529   2553.5437 ]
+#  [ 1683.7982     48.38358]]
+# -2486.629 -226.8197 1683.7982 2658.986
+# =============================
 
-[[3141.279      80.706474]
- [3192.036    2416.6748  ]
- [6938.0474   2743.146   ]
- [6869.2407    -80.182846]]
-3141.279 -80.182846 6938.0474 2743.146
-=============================
+# [[1789.1836     65.615555]
+#  [1860.5791   2376.226   ]
+#  [5154.1025   2485.239   ]
+#  [5083.1216    -43.93821 ]]
+# 1789.1836 -43.93821 5154.1025 2485.239
+# =============================
 
-[[ 4988.6816      29.972841]
- [ 5091.458     2548.468   ]
- [10146.665     3168.1335  ]
- [ 9960.408     -373.7504  ]]
-4988.6816 -373.7504 10146.665 3168.1335
-=============================
+# [[3141.279      80.706474]
+#  [3192.036    2416.6748  ]
+#  [6938.0474   2743.146   ]
+#  [6869.2407    -80.182846]]
+# 3141.279 -80.182846 6938.0474 2743.146
+# =============================
 
-10146.665 -5937.4375 3168.1335 -611.777
-(Width, Height) = (16084, 3779)
+# [[ 4988.6816      29.972841]
+#  [ 5091.458     2548.468   ]
+#  [10146.665     3168.1335  ]
+#  [ 9960.408     -373.7504  ]]
+# 4988.6816 -373.7504 10146.665 3168.1335
+# =============================
+
+# 10146.665 -5937.4375 3168.1335 -611.777
+# (Width, Height) = (16084, 3779)
 ```
 
 ![](./images/1.png)
@@ -429,7 +431,7 @@ Output:
 ![](./images/7.png)
 ![](./images/8.png)
 
-But here's the catch - this approach works just fine considering the camera is **not translated**. Notice the inherent digital lens problem that cause a **brightness change** for the side edges of the images, indicated by the **crease line** between the images. Further all the **projections are independent** of their neighbouring images and only based on the reference image, hence it may not happen that consecutive images, which had a significant overlap, will actually blend well as seen above. And, the placing of images just above/under - clearly, **overwriting the pixels** of the other image, is not be ideal.
+But here's the catch - this approach works just fine considering the camera is **not translated**. Notice the inherent digital lens problem that cause a **brightness change** for the side edges of the images, indicated by the **crease line** between the images. Further all the **projections are independent** of their neighbouring images and only based on the reference image, hence it may not happen that consecutive images, which had a significant overlap, will actually blend well, as seen above. And, the placing of images just above/under - clearly, **overwriting the pixels** of the other image, is not ideal.
 
 # The Robust Approach
 Since, we have noticed the theoretically correct approach **does not give seamless blend**, hence we levarage the **good overlap** of consecutive images to enhance the blend. <br>
@@ -587,13 +589,13 @@ The way we will approach is from both sides - keeping the reference images still
 ![](./images/Dist2.png){width="60%"}
 </center>
 <center>
-![](./images/Blend.png){width="60%"}
+![](./images/CombineAll.png){width="60%"}
 </center>
 <center>
 ![](./images/Dist123.png){width="60%"}
 </center>
 
-6. Repeat the same process but in the **Backward Direction (Right to Left)** and reverse order - $\texttt{Image6}$ and $\texttt{Image5}$ $\to$ $\texttt{Image65}$, and then $\texttt{Image65}$ and $\texttt{Image4}$ $\to$ $\texttt{Image654}$.
+1. Repeat the same process but in the **Backward Direction (Right to Left)** and reverse order - $\texttt{Image6}$ and $\texttt{Image5}$ $\to$ $\texttt{Image65}$, and then $\texttt{Image65}$ and $\texttt{Image4}$ $\to$ $\texttt{Image654}$.
 
 <center>
 ![](./images/Combine654.png){width="70%"}
@@ -606,7 +608,7 @@ The way we will approach is from both sides - keeping the reference images still
 ![](./images/DistForward.png)
 ![](./images/DistBackward.png)
 
-8. Finally, we get the seamless image - clearly the **ghosting effect** shows that images we not taken from a perfect rotating camera and there was some translation introduced - further the subjects moved in the meanwhile of taking those pictures.
+8. Finally, we get the seamless image - clearly the **ghosting effect** shows that images were **actually not taken from a perfect rotating camera** and there was **some translation** introduced - further the **subjects moved** in the meanwhile of taking those pictures hence we simply shouldn't overwrite one or the other.
 
 ![](./images/Result.png)
 
